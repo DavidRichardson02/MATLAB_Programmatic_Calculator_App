@@ -3,7 +3,8 @@ and then run by either:  (1.) Opening 'CalculatorApp.m' and pressing the run but
 
 
               NOTE: Does NOT contain functionality for: handling negatives, any trigonometry, any conversion of units, order of operations, intervals, rigorous error management, any sort of grid layouts(and by extension automatic 
-              space partitions for components and their interface elements, meaning they are positioned by hard coded values here), plus a ton of quality of life stuff. ALSO, the logic for the RelationalSymbols class's has not been implemented.
+              space partitions for components and their interface elements, meaning they are positioned by hard coded values here), plus a ton of quality of life stuff. ALSO, the logic for the RelationalSymbols class's interface 
+              components has not been implemented.
 
   
 Overall an extremely rough around the edges calculator app that really shouldn't be used as anything other than a starting point for getting familiar with the MATLAB syntax(especially with regards to interactive apps).
