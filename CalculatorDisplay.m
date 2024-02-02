@@ -1,9 +1,8 @@
 classdef CalculatorDisplay < handle
     % Manages both the display for calculation results and the editable text field
-    % CalculatorDisplay manages a multi-line display for the calculator.
     % This class supports multiple lines for user entries and results, with new entries appearing
     % at the bottom and previous entries moving up. It also includes a directional pad
-    % for navigating through the entries and editing them.
+    % for navigating through the entries and editing them(not useful at all in this version).
 
     properties
         MainContainer        % Container for the display elements
@@ -73,7 +72,7 @@ classdef CalculatorDisplay < handle
 
         function initializeDisplayLines(obj)
             % Initializes the display lines within the main container.
-            obj.DisplayLines = gobjects(5, 1); % Assuming 5 lines for simplicity
+            obj.DisplayLines = gobjects(5, 1); %Limiting to 5 lines for simplicity
             for i = 1:5
                 obj.DisplayLines(i) = uilabel(obj.MainContainer, 'Position', [1, 35 * (i-1), 428, 30], ...
                                               'HorizontalAlignment', 'left', 'FontSize', 14, 'Text', '');
@@ -120,14 +119,6 @@ classdef CalculatorDisplay < handle
             end
         end
         
-
-
-   function displayResult(obj, expression, result)
-            % Displays the calculation result in the format: expression = result
-            % This method is intended to be called after a calculation is performed.
-            formattedResult = [expression, ' = ', num2str(result)];
-            obj.addEntry(formattedResult);
-        end
 
 
 
