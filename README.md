@@ -19,12 +19,12 @@ ALSO, the logic for the RelationalSymbols class's interface elements has not bee
 
 
 
-Lastly, while the app is still generally unacceptable, quite a lot of planning and thought went into making an extensible and flexible structure with it's foundation in the intended core functionalities to be provided, 
-which not only make up the roots of the program from which all other branches will emerge, but also introduce problems that can only be satisfied by meeting certain conditions, and in doing so provide guidance for how 
-to proceed with any further modularizations based on the nature of the logic and code needed to satisfy each condition relative to the full context of the program designed for minimal friction for future developments,
-with a few very noteable exceptions, namely: implementing automatically positioned interface components, using a fundamentally different approach for calculating and displaying the user interactions(for example, I chose to directly link the action buttons to submit user entries to the input text in the calculator display, meaning that 
 
-handle error management by accepting any user input with zero restriction which will only be checked to be a valid input once the user presses)
+Lastly, while the app is still generally unacceptable, quite a lot of planning and thought went into making an extensible and flexible structure with it's foundation based in the intended core functionalities to be provided, 
+which not only make up the roots of the program from which all other branches will emerge, but also introduce problems that can only be satisfied by meeting certain conditions, and in doing so provide guidance for how 
+to proceed with any further modularizations based on the nature of the logic and code needed to satisfy each condition relative to the full context of the program. Designed for minimal friction with future developments,
+with a few very noteable exceptions, namely: implementing automatically positioned interface components(hardcoded cause it's a bother), using a fundamentally different approach for calculating and displaying the user interactions(too long to go into, I picked this way), etc. ~there's more but im bored, ill probably list some more later if i feel like it.
+
 
 
 
