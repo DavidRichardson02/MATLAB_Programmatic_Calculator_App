@@ -37,22 +37,6 @@ classdef CalculatorApp
     end
 end
 
-%A very simple calculator app made programmatically in MATLAB. To use this app, create a new blank project, add the .m files from this repository to the project files, and then run by either: (1.) Opening 'CalculatorApp.m' and pressing the run button found in the editor tab, or (2.) type 'myCalculator = CalculatorApp();' in the command window.
-
-%This repository is a very simple calculator app made programmatically in MATLAB. To use this app in MATLAB, create a new blank project, add each of the .m files from this repository to the project files, and then run the program by either: (1.) Opening 'CalculatorApp.m' and pressing the run button found in the editor tab, or (2.) type 'myCalculator = CalculatorApp();' in the command window.
-
-
-%NOTE: the logic for the RelationalSymbols class has not been implemented but the buttons do work.
-
-
-%ECE370_MATLAB_Calculator_Project
-
-The current latest version of this repository is a very simple uifigure based calculator app made programmatically in MATLAB. NOTE: the logic for the RelationalSymbols class has not been implemented but the buttons do work.
-To use this app in MATLAB, create a new blank project, add each of the .m files from this repository to the project files, and then run the program by either: (1.) Opening 'CalculatorApp.m' and pressing the run button found in the editor tab, or (2.) type 'myCalculator = CalculatorApp();' in the command window.
-
-%while this project is open
-
-
 
 
 
