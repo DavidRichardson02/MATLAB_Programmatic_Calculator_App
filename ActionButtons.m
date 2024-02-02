@@ -20,25 +20,14 @@ classdef ActionButtons
         
         function createButtons(obj)
             % Creates the "Clear" and "Calculate" buttons and sets their callbacks.
-              % Initializes directional pad buttons for navigation and editing.
-            %actions = {'del', 'Clear', 'Enter', 'Menu'};
-            %positions = {[380, 140, 30, 30], [380, 100, 30, 30], [350, 100, 30, 30], [410, 100, 30, 30]};
-            %for i = 1:4
-            %    uibutton(parent, 'Text', actions{i}, 'Position', positions{i}, ...
-            %             'ButtonPushedFcn', @(btn,event) obj.handleDirection(actions{i}));
-            %end
-
-
+        
             %% Clear button
             clearButton = uibutton(obj.Parent, 'Text', 'Clear', 'Position', [75, 275, 80, 30], ...
                                    'ButtonPushedFcn', @(btn, event) obj.clearExpression());
             %% Enter button
             enterButton = uibutton(obj.Parent, 'Text', 'Enter', 'Position', [162.5, 275, 80, 30], ...
                                   'ButtonPushedFcn', @(btn, event) obj.calculateExpression());
-                
-            % Positioning "Clear" and "Enter/Calculate" buttons
-            %clearButton.Position = [10, 375, 100, 30]; % Top or bottom, adjust as needed
-            %enterButton.Position = [120, 375, 100, 30]; % Next to Clear
+    
 
         end
         
