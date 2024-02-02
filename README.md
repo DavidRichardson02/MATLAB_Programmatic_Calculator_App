@@ -11,8 +11,8 @@ ALSO, the logic for the RelationalSymbols class's interface elements has not bee
 
 
 
-![Screenshot 2024-02-02 at 2 04 32 AM](https://github.com/DavidRichardson02/ECE-370_MATLAB_Calculator_Project_01/assets/144840390/57684c2e-89ca-4484-99de-ece9ebf6d6ed)
 
+![Screenshot 2024-02-02 at 4 46 48 AM](https://github.com/DavidRichardson02/MATLAB_Calculator_Project_01/assets/144840390/7ee9317e-bf4c-4817-bf58-8d35d23c5620)
 
 
 
