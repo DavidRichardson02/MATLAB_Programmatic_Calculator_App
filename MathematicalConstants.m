@@ -13,23 +13,28 @@ classdef MathematicalConstants
             % Constructor for MathematicalConstants class. Initializes constants buttons.
             obj.Parent = parent;
             obj.InputExpr = inputExpr;
-            %% Create buttons for mathematical constants
+            
+            % Create buttons for mathematical constants
             obj.createButtons();
         end
         
         function createButtons(obj)
             % Creates buttons for π and e, with their respective values.
-            %% Constants and their positions
             constants = {'π', 'e'};
             values = {'pi', 'exp(1)'};
+
+
+            % Constants and their positions
             positions = [10, 235, 50, 30; 10, 275, 50, 30]; % Right side, below operators
 
-            %% Iterate through constants to create buttons
+            % Iterate through constants to create buttons
             for i = 1:length(constants)
                 const = constants{i};
                 val = values{i};
                 pos = positions(i, :);
-                %% Button creation with callback to append constant
+
+
+                % Button creation with callback to append constant
                 uibutton(obj.Parent, 'Text', const, 'Position', pos, ...
                          'ButtonPushedFcn', @(btn,event) obj.appendToExpression(val));
             end
@@ -37,25 +42,11 @@ classdef MathematicalConstants
         
         function appendToExpression(obj, val)
             % Appends the value of the selected constant to the input expression.
-            %% Append constant value to input field
             currentExpr = obj.InputExpr.Value;
             obj.InputExpr.Value = [currentExpr, val];
         end
     end
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
