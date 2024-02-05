@@ -47,9 +47,10 @@ classdef NumberPad
         
                                 % Button creation with callback to append number
                                 uibutton(obj.ParentContainer, 'Text', num, 'Position', pos, ...
-                                       "BackgroundColor", [0.25 0.25 0.25], ... 
+                                       "BackgroundColor", [0 0.3470 0.6410], ... % [0.25 0.25 0.25]~dark_gray, [0 0.2470 0.4410]~navy, [0 0.3470 0.6410]~math_blue, [0 0.4470 0.7410]~medium_blue,  [0.3010 0.7450 0.9330]~light_blue
                                      "FontColor", "white", ... %"white" == [1.0 1.0 1.0]
                                       'ButtonPushedFcn', @(btn,event) obj.appendToExpression(num));
+
                                 end
                         end
                 end
