@@ -2,9 +2,8 @@ A very simple calculator app made programmatically in MATLAB. To use this app, c
 and then run by either:  (1.) Opening 'CalculatorApp.m' and pressing the run button found in the editor tab, or (2.) type 'myCalculator = CalculatorApp();' in the command window.
 
 
-              NOTE: Does NOT contain functionality for: handling negatives, any trigonometry, any conversion of units, order of operations, intervals, rigorous error management, any sort of grid layouts(and by extension automatic 
-              space partitions for components and their interface elements, meaning they are positioned by hard coded values here), plus a ton of quality of life stuff. ALSO, the logic for the RelationalSymbols class's interface 
-              components has not been implemented.
+              NOTE: Does NOT contain functionality for: any trigonometry, any conversion of units, intervals, rigorous error management, any sort of grid layouts(and by extension automatic 
+              space partitions for components and their interface elements, meaning they are positioned by hard coded values here), plus a ton of quality of life stuff.
 
   
 Overall an extremely rough around the edges calculator app that really shouldn't be used as anything other than a starting point for getting familiar with the MATLAB syntax(especially with regards to interactive apps).
@@ -12,8 +11,8 @@ ALSO, the logic for the RelationalSymbols class's interface elements has not bee
 
 
 
-![Screenshot 2024-02-07 at 3 11 05 AM](https://github.com/DavidRichardson02/MATLAB_Calculator_Project_01/assets/144840390/5c30e33b-b7e9-498e-8261-6dcae84738c0)
 
+![Screenshot 2024-02-07 at 3 11 05 AM](https://github.com/DavidRichardson02/MATLAB_Calculator_Project_01/assets/144840390/685ddfbd-913b-49a6-baf4-8c13babb24b6)
 
 
 
@@ -28,6 +27,5 @@ with a few very noteable exceptions, namely: implementing automatically position
 
 
 
-![Screenshot 2024-02-07 at 3 12 52 AM](https://github.com/DavidRichardson02/MATLAB_Calculator_Project_01/assets/144840390/0b4fe5ef-e1ef-4967-8172-d68905863061)
-
+![Screenshot 2024-02-07 at 3 12 52 AM](https://github.com/DavidRichardson02/MATLAB_Calculator_Project_01/assets/144840390/1dbeb321-e7ea-4a4d-abf3-47245a541362)
 
