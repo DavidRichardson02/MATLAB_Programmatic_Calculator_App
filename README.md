@@ -12,8 +12,7 @@ ALSO, the logic for the RelationalSymbols class's interface elements has not bee
 
 
 
-
-![Screenshot 2024-02-02 at 4 46 48 AM](https://github.com/DavidRichardson02/MATLAB_Calculator_Project_01/assets/144840390/7ee9317e-bf4c-4817-bf58-8d35d23c5620)
+![Screenshot 2024-02-07 at 3 11 05 AM](https://github.com/DavidRichardson02/MATLAB_Calculator_Project_01/assets/144840390/5c30e33b-b7e9-498e-8261-6dcae84738c0)
 
 
 
@@ -29,5 +28,6 @@ with a few very noteable exceptions, namely: implementing automatically position
 
 
 
+![Screenshot 2024-02-07 at 3 12 52 AM](https://github.com/DavidRichardson02/MATLAB_Calculator_Project_01/assets/144840390/0b4fe5ef-e1ef-4967-8172-d68905863061)
 
-![Screenshot 2024-02-02 at 2 27 45 AM](https://github.com/DavidRichardson02/MATLAB_Calculator_Project_01/assets/144840390/e478d98c-e826-49a7-9bba-d144c20592a3)
+
