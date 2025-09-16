@@ -10,20 +10,27 @@ CalculatorApp class:
 classdef CalculatorApp
         properties
                 MainFigure        % The main figure of the application and master container of all calculator components
-                CalculatorDisplay        % The output window responsible for rendering user interactions, 
+                CalculationDisplay        % The output window responsible for rendering user interactions, 
                 ActionButtons        % Provide functionality for submitting user-entries to the display and manage the logic for evaluating expressions.
                 
                 NumberPad        % A container grouping together each of the digits 0-9 as well as a symbol for negatives
                 ArithmeticOperators        % Serve as a container for grouping together the basic arithmetic operators as buttons 
                 MathematicalConstants        % The most common mathematical constants found on calculators, such as: PI, euler's, etc.
                 RelationalSymbols        % Groups together components of the calculator related to comparison based relational symbols
-                TrigonometricFunctions 
-                CommonDelimiters
-                ExponentialLogarithm
+                TrigonometricFunctions         % Serves as a container for encapsulating the various trigonometric operations to be performed
+                CommonDelimiters         % A container for providing access to some of the most commonly used delimiters in calculators, things like parentheses, commas, brackets, etc.
+                ExponentialLogarithm 
         end
 
+        
 
-
+%       [Button/Key press] -> Controller(Pad).onPress() -> CalculatorApp.appendToken()
+%        -> Display.update() -> (when '=' pressed) CalculatorApp.evaluate()
+%        -> ExpressionEngine.evaluate(expr) -> result -> Display.showResult()
+%
+%   This keeps concerns separate:
+%   Adding new buttons (e.g., ln, 10^x) is trivial: create button + appendToken('log(') or wrapper.
+%   Expression parsing is centralized and safe (no arbitrary code execution).
 
 
 
@@ -36,23 +43,23 @@ classdef CalculatorApp
 
 
                         % Instantiate the CalculatorDisplay, which now includes the input field
-                        app.CalculatorDisplay = CalculatorDisplay(app.MainFigure); % Old way of instantiating the CalculatorDisplay
+                        app.CalculationDisplay = CalculationDisplay(app.MainFigure); % Old way of instantiating the CalculatorDisplay
     
                         % Adjust component classes to use CalculatorDisplay for input and display
-                        app.NumberPad = NumberPad(app.MainFigure, app.CalculatorDisplay.InputExpression);
-                        app.ArithmeticOperators = ArithmeticOperators(app.MainFigure, app.CalculatorDisplay.InputExpression);
-                        app.ActionButtons = ActionButtons(app.MainFigure, app.CalculatorDisplay);
-                        app.TrigonometricFunctions = TrigonometricFunctions(app.MainFigure, app.CalculatorDisplay.InputExpression); 
-                        app.ExponentialLogarithm = ExponentialLogarithm(app.MainFigure, app.CalculatorDisplay.InputExpression); 
-                        app.MathematicalConstants = MathematicalConstants(app.MainFigure, app.CalculatorDisplay.InputExpression);
-                        app.RelationalSymbols = RelationalSymbols(app.MainFigure, app.CalculatorDisplay.InputExpression);
-                        app.CommonDelimiters = CommonDelimiters(app.MainFigure, app.CalculatorDisplay.InputExpression);
+                        app.NumberPad = NumberPad(app.MainFigure, app.CalculationDisplay.InputExpression);
+                        app.ArithmeticOperators = ArithmeticOperators(app.MainFigure, app.CalculationDisplay.InputExpression);
+                        app.ActionButtons = ActionButtons(app.MainFigure, app.CalculationDisplay);
+                        app.TrigonometricFunctions = TrigonometricFunctions(app.MainFigure, app.CalculationDisplay.InputExpression); 
+                        app.ExponentialLogarithm = ExponentialLogarithm(app.MainFigure, app.CalculationDisplay.InputExpression); 
+                        app.MathematicalConstants = MathematicalConstants(app.MainFigure, app.CalculationDisplay.InputExpression);
+                        app.RelationalSymbols = RelationalSymbols(app.MainFigure, app.CalculationDisplay.InputExpression);
+                        app.CommonDelimiters = CommonDelimiters(app.MainFigure, app.CalculationDisplay.InputExpression);
 
 
 
                         % Provide hyperlink to Github repo for this project
                         hlink = uihyperlink(app.MainFigure, 'Text', 'Project Git', ...
-                                'URL', 'https://github.com/DavidRichardson02/MATLAB_Calculator_Project_01', ...
+                                'URL', 'https://github.com/DavidRichardson02/MATLAB_Calculator_Project/tree/main', ...
                                 'Position', [330, 2.5, 100, 50], ...
                                 'BackgroundColor', [0.875 0.875 0.875], ...
                                 'VisitedColor', [0.4940 0.1840 0.5560], ... 
