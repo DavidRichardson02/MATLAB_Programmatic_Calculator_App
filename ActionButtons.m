@@ -1,20 +1,27 @@
 %{
-ActionButtons class:
-      Manages action-oriented buttons such as "del", "Clear", "Enter", and "Menu".
-      This class defines functionality for clearing the display and calculating
-      expressions, displaying results or error messages directly through the
-      CalculatorDisplay component.
+CalculatorDisplay class:
+      Manages both the display for calculation results and the editable text field
+      CalculatorDisplay manages a multi-line display for the calculator.
+      This class supports multiple lines for user entries and results, with new entries appearing
+      at the bottom and previous entries moving up.
 
-        
-        Hardcoding used for:
-                - The text and name of each action button
-                - Assigning the callback function of each action button
-                - The positioning of each action button
+The handle class is the superclass for all classes that follow handle semantics. A handle is a variable that refers to an object of a handle class. Multiple variables can refer to the same object.
+The handle class is an abstract class, so you cannot create an instance of this class directly. You use the handle class to derive other classes, which can be concrete classes whose instances are handle objects.
+
 %}
-classdef ActionButtons
+classdef CalculationDisplay < handle
         properties
-                ParentContainer        % Parent container for the action buttons
-                CalculatorDisplay        % Updated to directly interact with CalculatorDisplay
+                DisplayPanel        % Main container for grouping together the display elements in a panel   :   Represented as a 'uipanel' object
+                OutputLines        % Array of label components for each display line   :   Represented as 'uilabel' objects of the DisplayPanel's 'uipanel' object
+                History        % History of calculations and inputs
+                HistoryIndex        % Current index in the history for navigation
+                CursorPosition        % Position of the cursor in the current input     <--- currently unused, want to have the blinking cursor on text line but not working as of rn
+                InputExpression        % Editable text field for user input
+                OccupiedOutputLineCount        % Count of the output lines that are occupied by some prior expression   <--- currently unused
+                MAXIMUM_DISPLAY_OUTPUT_LINES = 100;        % Maxmimum number of display output lines allowed
+                
+                ResultLabels          % Array of all UILabels used in history
+                LastHighlightedLabel  % The UILabel that was last highlighted
         end
 
 
@@ -23,41 +30,68 @@ classdef ActionButtons
 
 
         methods
-                function obj = ActionButtons(parent, calculatorDisplay)
+                function obj = CalculationDisplay(parent)
                         %{
-                                Constructor for ActionButtons class. Initializes action buttons.
+                                Initializes the display area, input field within the given parent UI component.
                         %}
 
 
-                        obj.ParentContainer = parent;
-                        obj.CalculatorDisplay = calculatorDisplay; % Use CalculatorDisplay for operations
+                        % Temporary hardocoded values for initial positions/sizes of components.
+                        panelPosition = [10, 400, 430, 190];
+                        inputFieldPosition = [10, 350, 400, 30];
 
 
-                        % Create action buttons
-                        obj.createButtons();
+
+
+                        % Create the main panel for displaying output from user entries
+                        obj.DisplayPanel = uipanel(parent, ... % The first argument specifies the 'uifigure' parent to which this panel belongs
+                                'Title', 'Output Window', ...   % Hardcoded
+                                'BorderColor', 'black', ...
+                                'Scrollable', 'on', ...
+                                'BackgroundColor', 'white', ...
+                                'Position', panelPosition);
+
+
+
+                        % Create and configure the display lines for the panel
+                        obj.initializeDisplayLines();
+                        obj.History = {''}; % Start with an empty entry
+                        obj.HistoryIndex = 1;
+                        obj.CursorPosition = 1;
+
+
+
+
+                        % Create the input field and define it's function callback
+                        % Initialize the input field as an editable text field with text characters accepted as entries.
+                        obj.InputExpression = uieditfield(parent, 'text', 'Position', inputFieldPosition, ...
+                                'BackgroundColor', [0.9 0.9 0.9], ...
+                                'HorizontalAlignment', 'right');
+
+
+                        % Define the function callbacks
+                        obj.InputExpression.ValueChangedFcn = @(src, event) obj.updateInput(src.Value); % Handle input changes
                 end
 
 
 
 
+                
 
 
 
-
-                function createButtons(obj)
+                function initializeDisplayLines(obj)
                         %{
-                                Creates the "del", "Clear", "Enter", and "Menu" buttons and sets their callbacks.
+                                Initializes the display lines within the main container.
                         %}
-                        % Button labels and their positions
-                        actionButtons = {'del', 'Clear', 'Enter', 'Menu'};
-                        positions = {[250, 275, 30, 30], [75, 275, 80, 30], [162.5, 275, 80, 30], [285, 275, 40, 30]};
 
-
-                        % Create each button with its label, position, and callback function
-                        for i = 1:length(actionButtons)
-                                uibutton(obj.ParentContainer, 'Text', actionButtons{i}, 'Position', positions{i}, ...
-                                        'ButtonPushedFcn', @(btn, event) obj.handleButtonAction(actionButtons{i}));
+                        obj.OccupiedOutputLineCount = 0;
+                        obj.OutputLines = gobjects(obj.MAXIMUM_DISPLAY_OUTPUT_LINES, 1); % Initialize MAXIMUM_DISPLAY_OUTPUT_LINES number of lines. Represent output lines as graphical objects, 'gobjects',?
+                        for i = 1:obj.MAXIMUM_DISPLAY_OUTPUT_LINES
+                                obj.OutputLines(i) = uilabel(obj.DisplayPanel, 'Position', [1, 35 * (i-1), 428, 30], ...
+                                        'HorizontalAlignment', 'left', 'FontSize', 14, 'Text', '', 'WordWrap', 'on'); % Setting WordWrap to on breaks text into new lines so that each line fits within the width of the component
                         end
+                        obj.updateDisplay();
                 end
 
 
@@ -67,284 +101,27 @@ classdef ActionButtons
 
 
 
-                function handleButtonAction(obj, buttonLabel)
-                        switch buttonLabel
-                                case 'del'
-                                        obj.deleteLastCharacter();
-                                case 'Clear'
-                                        obj.clearExpression();
-                                case 'Enter'
-                                        obj.calculateExpression();
-                                case 'Menu'
-                                        % Code to handle 'Menu' button action
-                                otherwise
-                                        disp(['Unknown button action: ', buttonLabel]);
-                        end
-                end
-
-
-
-
-
-
-
-
-                function deleteLastCharacter(obj)
+                function updateInput(obj, newValue)
                         %{
-                                Deletes the latest character in the input expression.
-                        %}
-                        currentExpression = obj.CalculatorDisplay.InputExpression.Value;
-                        if ~isempty(currentExpression)
-                                % Remove the last character from the expression
-                                updatedExpression = currentExpression(1:end-1);
-                                obj.CalculatorDisplay.InputExpression.Value = updatedExpression;
-                        end
-                end
-
-
-
-
-
-
-
-
-                function clearExpression(obj)
-                        %{
-                                Clears the input and display in CalculatorDisplay.
-                        %}
-                        obj.CalculatorDisplay.InputExpression.Value = ''; % Clear input field
-                end
-
-
-
-
-
-
-
-
-                function displayErrorMessage(obj, message)
-                        % Displays an error message in a modal dialog box.
-                        uialert(obj.ParentContainer, message, 'Error', 'Icon', 'error');
-                end
-
-
-
-
-
-
-
-
-                function delimitersValidity = validateDelimiters(~, expression)
-                        % Initialize validity flag
-                        delimitersValidity = true;
-
-
-                        % Check for balanced parentheses
-                        if count(expression, '(') ~= count(expression, ')')
-                                delimitersValidity = false;
-                                disp('Error: Unbalanced parentheses.');
-                                return;
-                        end
-
-
-                        % Check for balanced brackets
-                        if count(expression, '[') ~= count(expression, ']')
-                                delimitersValidity = false;
-                                disp('Error: Unbalanced brackets.');
-                                return;
-                        end
-
-
-                        % Check for balanced curly brackets
-                        if count(expression, '{') ~= count(expression, '}')
-                                delimitersValidity = false;
-                                disp('Error: Unbalanced curly brackets.');
-                                return;
-                        end
-
-
-
-
-
-                        % Check for consecutive parentheses, brackets, curly brackets
-                        if ~isempty(regexp(expression, '(\(\)|\[\]|\{\})', 'once'))
-                                delimitersValidity = false;
-                                disp('Error: Consecutive or empty delimiters.');
-                                return;
-                        end
-
-
-                        % Check for unclosed parentheses, brackets, curly brackets
-                        unclosedPattern = '(\([^\)]*$)|(\[[^\]]*$)|(\{[^\}]*$)';
-                        if ~isempty(regexp(expression, unclosedPattern, 'once'))
-                                delimitersValidity = false;
-                                disp('Error: Unclosed delimiters.');
-                                return;
-                        end
-
-
-                        % Check for closed but empty parentheses, brackets, curly brackets
-                        emptyPattern = '(\(\))|(\[\])|(\{\})';
-                        if ~isempty(regexp(expression, emptyPattern, 'once'))
-                                delimitersValidity = false;
-                                disp('Error: Empty delimiters.');
-                                return;
-                        end
-
-
-
-
-                end
-
-
-
-
-
-
-
-
-                function operatorsValidity = validateOperators(~, expression)
-
-
-                        % Initialize validity flag
-                        operatorsValidity = true;
-                        operators = '+-*/';
-                        nOperators = length(operators);
-
-                        %% Check for misuse of operators(can't be first or last, must be preceded by and followed by either a digit or parenthesis)
-                        for i = 1:length(expression)
-                                if expression(i) == operators(1) ||  expression(i) == operators(2) ||  expression(i) == operators(3) ||  expression(i) == operators(4)
-                                        if i == 1 || i == length(expression) % If the operator is the first or last character
-                                                operatorsValidity = false;
-                                                disp('Error: Invalid use of operators.');
-                                                return;
-                                        end
-                                end
-                        end
-
-
-                        %% Check for consecutive operators of the same kind
-                        for i = 1:length(operators)
-                                operator = operators(i);
-                                if contains(expression, [operator, operator])
-                                        operatorsValidity = false;
-                                        disp('Error: Consecutive operators (', operator, ').');
-                                        return;
-                                end
-                        end
-
-
-                        %% Check for consecutive operators of different kinds
-                        for i = 1:nOperators
-                                for j = 1:nOperators    % For each operator i, loop through all operators j!=i, generate an array with the two operators as elements, and parse the expression to detect occurences of the operator pair
-                                        if i ~= j  % Ensure we're pairing different operators
-                                                operatorPair = [operators(i), operators(j)];    % Generate each [i,j] pair of different operators for the current operator i
-
-                                                if contains(expression, operatorPair)   % The 'contains' function checks if the current operator pair is found in the input expression
-                                                        % If a pair is found operatorsValidity is set to false and an error message with the offending operator pair is displayed before exiting the function
-                                                        operatorsValidity = false;
-                                                        disp(['Error: Consecutive different operators (' operatorPair ').']);
-                                                        return;
-                                                end
-                                        end
-                                end
-                        end
-                end
-
-
-
-
-
-
-
-
-                function  isValid = validateExpression(obj, expression)
-                        %{
-
+                                Handles updates to the input field, displaying the current value.
                         %}
 
 
-                        if isempty(expression)
-                                isValid = false;
-                                disp('Error: Empty expression.');
-                                return;
-                        end
-
-
-                        % Initialize validity flag
-                        isValid = true;
-
-
-                        delimitersValidity = obj.validateDelimiters(expression);
-                        if ~delimitersValidity
-                                isValid = false;
-                                obj.displayErrorMessage('Error: Invalid use of delimiters.');
-                                return;
-                        end
-
-
-                        operatorsValidity = obj.validateOperators(expression);
-                        if ~operatorsValidity
-                                isValid = false;
-                                obj.displayErrorMessage('Error: Invalid use of operators.');
-                                return;
-                        end
-
-
-
-                        % Check for valid decimal point usagey
-                        digits = '0123456789piexpπ';
-                        for i = 1:length(expression)
-                                if expression(i) == '.'
-                                        if i == 1 || i == length(expression) || ...
-                                                        ~ismember(expression(i-1), digits) || ...
-                                                        (~ismember(expression(i+1), digits)) % Or if the proceding character is not a digit(and this isn't the last character)
-                                                isValid = false;
-                                                obj.displayErrorMessage('Error: Invalid use of decimal point.');
-                                                disp('Error: Invalid decimal point placement.'); % More detailed error info shown in command window
-                                                return;
-                                        end
-                                end
-                        end
-                        %}
-
-
-
-                end
-
-
-
-
-
-
-
-
-                function calculateExpression(obj)
-                        %{
-                                Evaluates the current expression in CalculatorDisplay and displays the result or an error.
-                        %}
-
-
-                        expression = obj.CalculatorDisplay.InputExpression.Value; % Get current expression from CalculatorDisplay
-                        isValid = obj.validateExpression(expression);
-
-
-                        if isValid
-
-                                try
-                                        result = eval(expression); % Evaluate expression
-                                        obj.CalculatorDisplay.addEntry(num2str(result)); % Display result
-
-                                catch
-                                        % Case where the expression was determined to be valid but the MATLAB function, 'eval(expression)', failed
-                                        obj.displayErrorMessage('Error: Failed evaluation of valid expression.');
-                                end
-
+                        % Update the last line of the display to show the current input
+                        if isempty(obj.History) || obj.HistoryIndex == length(obj.History)
+                                % If the output lines are all empty or we are currently on the last entry, then update it directly
+                                obj.History{end} = newValue;
                         else
-                                obj.displayErrorMessage('Error: Invalid Expression.'); % Display error, more detailed error info shown in command window instead of modal dialogue box
-                                obj.CalculatorDisplay.InputExpression.Value = ''; % Clear input field
+                                % Otherwise, add the new value as the latest entry
+                                obj.History{end+1} = newValue;
+                                obj.HistoryIndex = length(obj.History);
                         end
 
+                        % Ensure the display is updated to reflect the latest input
+                        obj.updateDisplay();
+
+                        % Reset the cursor position for editing(unsure?)
+                        obj.CursorPosition = length(newValue) + 1;
                 end
 
 
@@ -355,6 +132,89 @@ classdef ActionButtons
 
 
 
+
+
+                function addEntry(obj, entry)
+                        % Adds a new entry to the history and updates the display.
+
+                        if obj.HistoryIndex < length(obj.History)
+                                obj.History = obj.History(1:obj.HistoryIndex); % Trim forward history if necessary
+                        end
+
+                        % Convert the result to string and store
+                        solution = num2str(entry);
+
+                        % Format with alignment (same as before)
+                        labelWidth = 428; 
+                        charWidth = 10;  
+                        numSpaces = floor((labelWidth - (length(obj.InputExpression.Value) + length(solution)) * charWidth) / charWidth);
+                        formattedResult = [obj.InputExpression.Value, repmat(' ', 1, max(numSpaces, 0)), solution];
+
+                        % Add to history and update index
+                        obj.History{end+1} = formattedResult;
+                        obj.HistoryIndex = length(obj.History);
+
+                         % Clear the input expression and update the display
+                        obj.InputExpression.Value = '';
+                        obj.updateDisplay();
+                end
+  
+
+
+
+                function updateDisplay(obj)
+                        %{
+                                Updates the display to show the history of calculations or the current entry.
+                                This method needs to clear the existing text across all lines and repopulate the output lines based 
+                                on the history of lines/expressions and the current index.
+                        %}
+
+                        % Each time the display is updated, the existing output lines are cleared
+                        % and then reinitialized with the old lines up to the most recent line, which is initialized with the current entry
+                        set(obj.OutputLines, 'Text', '', 'FontWeight', 'normal', 'BackgroundColor', [0.65 0.65 0.65]);  % Grey
+
+
+                        % Find the widest expression in the history
+                        maxExprLength = 0;      %  Stores the length of the widest expression in the history of output
+                        for i = 1:length(obj.History)
+                                expression = obj.History{i};
+                                exprLength = length(expression);
+                                if exprLength > maxExprLength
+                                        maxExprLength = exprLength;
+                                end
+                        end
+
+
+
+                        startLine = max(1, obj.HistoryIndex - (obj.MAXIMUM_DISPLAY_OUTPUT_LINES - 1)); % Sets the starting output line to the last, highest index, history line(-4 is because there are 5 lines total, arbitrary and hardcoded)
+                        endLine = obj.HistoryIndex;
+
+
+                        for i = startLine:endLine
+                                lineIndex = obj.MAXIMUM_DISPLAY_OUTPUT_LINES - (endLine - i);
+                                expression = obj.History{i};
+                                % Calculate the number of spaces needed for alignment
+                                numSpaces = maxExprLength - length(expression);       % Based on the difference between the length of the widest expression and the length of the current
+
+                                % Format the text with spaces for alignment
+                                formattedText = [expression, repmat(' ', 1, numSpaces)];      % Concatenating the expression with the required number of spaces.
+                                
+
+                                obj.OutputLines(lineIndex).Text = formattedText; % Set the text of each line
+
+
+                                % Highlight the most recent entry line
+                                if i == obj.HistoryIndex
+                                        obj.OutputLines(lineIndex).FontWeight = 'bold';
+                                        obj.OutputLines(lineIndex).BackgroundColor =  [0.68, 0.85, 0.9];  % light blue
+                                else
+                                        obj.OutputLines(lineIndex).FontWeight = 'normal';
+                                        obj.OutputLines(lineIndex).BackgroundColor =  [0.875 0.875 0.875];
+                                end
+                        end
+                        obj.OccupiedOutputLineCount = 0;
+
+                end
 
 
 
@@ -365,8 +225,6 @@ classdef ActionButtons
 
         end
 end
-
-
 
 
 
