@@ -4,8 +4,12 @@ CalculatorDisplay class:
       CalculatorDisplay manages a multi-line display for the calculator.
       This class supports multiple lines for user entries and results, with new entries appearing
       at the bottom and previous entries moving up.
+
+The handle class is the superclass for all classes that follow handle semantics. A handle is a variable that refers to an object of a handle class. Multiple variables can refer to the same object.
+The handle class is an abstract class, so you cannot create an instance of this class directly. You use the handle class to derive other classes, which can be concrete classes whose instances are handle objects.
+
 %}
-classdef CalculatorDisplay < handle
+classdef CalculationDisplay < handle
         properties
                 DisplayPanel        % Main container for grouping together the display elements in a panel   :   Represented as a 'uipanel' object
                 OutputLines        % Array of label components for each display line   :   Represented as 'uilabel' objects of the DisplayPanel's 'uipanel' object
@@ -15,6 +19,9 @@ classdef CalculatorDisplay < handle
                 InputExpression        % Editable text field for user input
                 OccupiedOutputLineCount        % Count of the output lines that are occupied by some prior expression   <--- currently unused
                 MAXIMUM_DISPLAY_OUTPUT_LINES = 100;        % Maxmimum number of display output lines allowed
+                
+                ResultLabels          % Array of all UILabels used in history
+                LastHighlightedLabel  % The UILabel that was last highlighted
         end
 
 
@@ -23,7 +30,7 @@ classdef CalculatorDisplay < handle
 
 
         methods
-                function obj = CalculatorDisplay(parent)
+                function obj = CalculationDisplay(parent)
                         %{
                                 Initializes the display area, input field within the given parent UI component.
                         %}
@@ -124,45 +131,34 @@ classdef CalculatorDisplay < handle
 
 
 
+
+
+
                 function addEntry(obj, entry)
-                        %{
-                                Adds a new entry to the history and updates the display.
-                        %}
+                        % Adds a new entry to the history and updates the display.
 
-
-                        if obj.HistoryIndex < length(obj.History)      % If not at the end of the history, trim any forward history
-                                obj.History = obj.History(1:obj.HistoryIndex);
+                        if obj.HistoryIndex < length(obj.History)
+                                obj.History = obj.History(1:obj.HistoryIndex); % Trim forward history if necessary
                         end
 
-                        % Format the display string to show the expression on the left side and the result on the right
-                        solution = num2str(entry); % Convert the solution to a string
+                        % Convert the result to string and store
+                        solution = num2str(entry);
 
-
-                        % Calculate the number of spaces needed for alignment
-                        labelWidth = 428; % Width of the label in pixels
-                        charWidth = 10;   % Approximate width of a character in pixels
+                        % Format with alignment (same as before)
+                        labelWidth = 428; 
+                        charWidth = 10;  
                         numSpaces = floor((labelWidth - (length(obj.InputExpression.Value) + length(solution)) * charWidth) / charWidth);
-
-                        % Create the formatted string with spaces for alignment
                         formattedResult = [obj.InputExpression.Value, repmat(' ', 1, max(numSpaces, 0)), solution];
 
-
-                        % Add the formatted string to the history
+                        % Add to history and update index
                         obj.History{end+1} = formattedResult;
-
-
-                        % Update the index to point to the latest entry
                         obj.HistoryIndex = length(obj.History);
 
-
-                        % Ensure the display is updated to show the latest entry
+                         % Clear the input expression and update the display
+                        obj.InputExpression.Value = '';
                         obj.updateDisplay();
                 end
-
-
-
-
-
+  
 
 
 
@@ -175,7 +171,7 @@ classdef CalculatorDisplay < handle
 
                         % Each time the display is updated, the existing output lines are cleared
                         % and then reinitialized with the old lines up to the most recent line, which is initialized with the current entry
-                        set(obj.OutputLines, 'Text', ''); % Clear all lines
+                        set(obj.OutputLines, 'Text', '', 'FontWeight', 'normal', 'BackgroundColor', [0.65 0.65 0.65]);  % Grey
 
 
                         % Find the widest expression in the history
@@ -202,13 +198,22 @@ classdef CalculatorDisplay < handle
 
                                 % Format the text with spaces for alignment
                                 formattedText = [expression, repmat(' ', 1, numSpaces)];      % Concatenating the expression with the required number of spaces.
-
+                                
 
                                 obj.OutputLines(lineIndex).Text = formattedText; % Set the text of each line
+
+
+                                % Highlight the most recent entry line
+                                if i == obj.HistoryIndex
+                                        obj.OutputLines(lineIndex).FontWeight = 'bold';
+                                        obj.OutputLines(lineIndex).BackgroundColor =  [0.68, 0.85, 0.9];  % light blue
+                                else
+                                        obj.OutputLines(lineIndex).FontWeight = 'normal';
+                                        obj.OutputLines(lineIndex).BackgroundColor =  [0.875 0.875 0.875];
+                                end
                         end
                         obj.OccupiedOutputLineCount = 0;
 
-                        obj.InputExpression.Value = ''; % Clear input field
                 end
 
 
