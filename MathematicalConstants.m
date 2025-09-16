@@ -37,9 +37,9 @@ classdef MathematicalConstants
                         obj.ConstantsPanel = uipanel(parent, 'Position', [60, 235, 75, 75], 'Visible', 'off', 'BackgroundColor', [0.75 0.75 0.75]);
 
                         % Create a dropdown button with styling
-                        obj.DropdownButton = uibutton(parent, 'Text', '▼ π', ...
+                        obj.DropdownButton = uibutton(parent, 'Text', '▼ π', ... % 
                                 'Position', [10, 235, 50, 30], 'ButtonPushedFcn', @(btn,event) obj.toggleConstantsPanel(), ...
-                                'BackgroundColor', [0.8 0.8 0.8]);
+                                'BackgroundColor', [0.7 0.7 0.7]);
 
                         % Create buttons for mathematical constants and add them to the panel
                         obj.createButtons();
@@ -60,7 +60,7 @@ classdef MathematicalConstants
 
                         % Define mathematical constants and their positions
                         constants = {'π', 'e', '√2', 'φ', 'i'};
-                        values = {'pi', 'exp(1)', 'sqrt(2)', '(1 + sqrt(5))/2', '1i'};
+                        values = {'π', 'exp(1)', 'sqrt(2)', 'φ', '1i'};
                         positions = [5, 40, 30, 30; 40, 40, 30, 30; 5, 5, 30, 30; 40, 5, 30, 30; 5, -30, 30, 30; 40, -30, 30, 30; 5, -65, 30, 30; 40, -65, 30, 30];
 
 
