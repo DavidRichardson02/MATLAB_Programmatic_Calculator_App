@@ -35,17 +35,19 @@ and then run by either:  (1.) Opening 'CalculatorApp.m' and pressing the run but
 
 
   
-![Screenshot 2024-03-25 at 12 34 04 AM](https://github.com/DavidRichardson02/MATLAB_Calculator_Project_02/assets/144840390/86e9b634-d6e4-4277-afac-df53dc8d62cc)
+
+
+
+<img width="453" height="656" alt="Screenshot 2025-09-16 at 7 13 07 PM" src="https://github.com/user-attachments/assets/2e1b0af0-a7b6-4108-b50e-599b93f5fb02" />
 
 
 
 
 
-https://github.com/DavidRichardson02/MATLAB_Calculator_Project_02/assets/144840390/2fd53a6d-f9d8-43c7-9c24-572fdb961b4f
 
 
 
-
+https://github.com/user-attachments/assets/600ec135-46b4-49e8-812c-c651368e1913
 
 
 
