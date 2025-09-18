@@ -1,235 +1,137 @@
-%{
-CalculatorDisplay class:
-      Manages both the display for calculation results and the editable text field
-      CalculatorDisplay manages a multi-line display for the calculator.
-      This class supports multiple lines for user entries and results, with new entries appearing
-      at the bottom and previous entries moving up.
+% ===========================
+% ActionButtons (grid-based)
+% ===========================
+classdef ActionButtons < handle
+    % ActionButtons
+    %   Hosts Clear / Enter / Del / Menu.
+    %   Responsibilities:
+    %     • Keep buttons enabled/disabled based on input contents
+    %     • Evaluate on Enter: sanitize → eval → commit via CalculationDisplay.addEntry
+    %     • Mirror typing via onInputChanged → CalculationDisplay.updateInput
 
-The handle class is the superclass for all classes that follow handle semantics. A handle is a variable that refers to an object of a handle class. Multiple variables can refer to the same object.
-The handle class is an abstract class, so you cannot create an instance of this class directly. You use the handle class to derive other classes, which can be concrete classes whose instances are handle objects.
+    properties
+        Parent                 % Panel or Grid cell provided by caller
+        Grid                   % Internal grid that holds buttons
+        CalculatorDisplay      % Handle to unified CalculationDisplay
+        BtnClear               matlab.ui.control.Button
+        BtnEnter               matlab.ui.control.Button
+        BtnDel                 matlab.ui.control.Button
+        BtnMenu                matlab.ui.control.Button
+    end
 
-%}
-classdef CalculationDisplay < handle
-        properties
-                DisplayPanel        % Main container for grouping together the display elements in a panel   :   Represented as a 'uipanel' object
-                OutputLines        % Array of label components for each display line   :   Represented as 'uilabel' objects of the DisplayPanel's 'uipanel' object
-                History        % History of calculations and inputs
-                HistoryIndex        % Current index in the history for navigation
-                CursorPosition        % Position of the cursor in the current input     <--- currently unused, want to have the blinking cursor on text line but not working as of rn
-                InputExpression        % Editable text field for user input
-                OccupiedOutputLineCount        % Count of the output lines that are occupied by some prior expression   <--- currently unused
-                MAXIMUM_DISPLAY_OUTPUT_LINES = 100;        % Maxmimum number of display output lines allowed
-                
-                ResultLabels          % Array of all UILabels used in history
-                LastHighlightedLabel  % The UILabel that was last highlighted
+    methods
+        function obj = ActionButtons(parentContainer, calcDisplay)
+            % parentContainer: a uigridlayout cell OR a uipanel
+            % calcDisplay:     your CalculationDisplay instance
+            obj.Parent            = parentContainer;
+            obj.CalculatorDisplay = calcDisplay;
+
+            % Create an internal grid if the parent isn't already a grid cell
+            if isa(parentContainer,'matlab.ui.container.GridLayout')
+                g = parentContainer;   % use the caller's grid directly
+            else
+                g = uigridlayout(parentContainer,[1 4], ...
+                    'RowHeight', {'fit'}, ...
+                    'ColumnWidth', {'1x','1x','1x','fit'}, ...
+                    'ColumnSpacing', 8, 'RowSpacing', 0, 'Padding', [0 0 0 0]);
+            end
+            obj.Grid = g;
+
+            % --- Buttons (order: clear | enter | del | menu)
+            obj.BtnClear = uibutton(g,'Text','clear', ...
+                'ButtonPushedFcn', @(src,evt)obj.clearExpression());
+            obj.BtnClear.Layout.Row = 1; obj.BtnClear.Layout.Column = 1;
+
+            obj.BtnEnter = uibutton(g,'Text','enter', ...
+                'ButtonPushedFcn', @(src,evt)obj.calculateExpression());
+            obj.BtnEnter.Layout.Row = 1; obj.BtnEnter.Layout.Column = 2;
+
+            obj.BtnDel = uibutton(g,'Text','del', ...
+                'ButtonPushedFcn', @(src,evt)obj.deleteLastCharacter());
+            obj.BtnDel.Layout.Row = 1; obj.BtnDel.Layout.Column = 3;
+
+            obj.BtnMenu = uibutton(g,'Text','menu', ...
+                'ButtonPushedFcn', @(src,evt)obj.showMenu());
+            obj.BtnMenu.Layout.Row = 1; obj.BtnMenu.Layout.Column = 4;
+
+            % Initial enable/disable state and reactive wiring
+            obj.syncButtonEnable();
+            obj.CalculatorDisplay.InputExpression.ValueChangedFcn = @(src,~) ...
+                obj.onInputChanged(src.Value);
+
+            % Keyboard shortcuts on the host figure (Enter / Backspace / Esc)
+            fig = ancestor(obj.Grid,'figure');
+            if ~isempty(fig) && isempty(fig.KeyPressFcn)
+                fig.KeyPressFcn = @(~,e)obj.onKey(e);
+            end
         end
 
-
-
-
-
-
-        methods
-                function obj = CalculationDisplay(parent)
-                        %{
-                                Initializes the display area, input field within the given parent UI component.
-                        %}
-
-
-                        % Temporary hardocoded values for initial positions/sizes of components.
-                        panelPosition = [10, 400, 430, 190];
-                        inputFieldPosition = [10, 350, 400, 30];
-
-
-
-
-                        % Create the main panel for displaying output from user entries
-                        obj.DisplayPanel = uipanel(parent, ... % The first argument specifies the 'uifigure' parent to which this panel belongs
-                                'Title', 'Output Window', ...   % Hardcoded
-                                'BorderColor', 'black', ...
-                                'Scrollable', 'on', ...
-                                'BackgroundColor', 'white', ...
-                                'Position', panelPosition);
-
-
-
-                        % Create and configure the display lines for the panel
-                        obj.initializeDisplayLines();
-                        obj.History = {''}; % Start with an empty entry
-                        obj.HistoryIndex = 1;
-                        obj.CursorPosition = 1;
-
-
-
-
-                        % Create the input field and define it's function callback
-                        % Initialize the input field as an editable text field with text characters accepted as entries.
-                        obj.InputExpression = uieditfield(parent, 'text', 'Position', inputFieldPosition, ...
-                                'BackgroundColor', [0.9 0.9 0.9], ...
-                                'HorizontalAlignment', 'right');
-
-
-                        % Define the function callbacks
-                        obj.InputExpression.ValueChangedFcn = @(src, event) obj.updateInput(src.Value); % Handle input changes
-                end
-
-
-
-
-                
-
-
-
-                function initializeDisplayLines(obj)
-                        %{
-                                Initializes the display lines within the main container.
-                        %}
-
-                        obj.OccupiedOutputLineCount = 0;
-                        obj.OutputLines = gobjects(obj.MAXIMUM_DISPLAY_OUTPUT_LINES, 1); % Initialize MAXIMUM_DISPLAY_OUTPUT_LINES number of lines. Represent output lines as graphical objects, 'gobjects',?
-                        for i = 1:obj.MAXIMUM_DISPLAY_OUTPUT_LINES
-                                obj.OutputLines(i) = uilabel(obj.DisplayPanel, 'Position', [1, 35 * (i-1), 428, 30], ...
-                                        'HorizontalAlignment', 'left', 'FontSize', 14, 'Text', '', 'WordWrap', 'on'); % Setting WordWrap to on breaks text into new lines so that each line fits within the width of the component
-                        end
-                        obj.updateDisplay();
-                end
-
-
-
-
-
-
-
-
-                function updateInput(obj, newValue)
-                        %{
-                                Handles updates to the input field, displaying the current value.
-                        %}
-
-
-                        % Update the last line of the display to show the current input
-                        if isempty(obj.History) || obj.HistoryIndex == length(obj.History)
-                                % If the output lines are all empty or we are currently on the last entry, then update it directly
-                                obj.History{end} = newValue;
-                        else
-                                % Otherwise, add the new value as the latest entry
-                                obj.History{end+1} = newValue;
-                                obj.HistoryIndex = length(obj.History);
-                        end
-
-                        % Ensure the display is updated to reflect the latest input
-                        obj.updateDisplay();
-
-                        % Reset the cursor position for editing(unsure?)
-                        obj.CursorPosition = length(newValue) + 1;
-                end
-
-
-
-
-
-
-
-
-
-
-
-                function addEntry(obj, entry)
-                        % Adds a new entry to the history and updates the display.
-
-                        if obj.HistoryIndex < length(obj.History)
-                                obj.History = obj.History(1:obj.HistoryIndex); % Trim forward history if necessary
-                        end
-
-                        % Convert the result to string and store
-                        solution = num2str(entry);
-
-                        % Format with alignment (same as before)
-                        labelWidth = 428; 
-                        charWidth = 10;  
-                        numSpaces = floor((labelWidth - (length(obj.InputExpression.Value) + length(solution)) * charWidth) / charWidth);
-                        formattedResult = [obj.InputExpression.Value, repmat(' ', 1, max(numSpaces, 0)), solution];
-
-                        % Add to history and update index
-                        obj.History{end+1} = formattedResult;
-                        obj.HistoryIndex = length(obj.History);
-
-                         % Clear the input expression and update the display
-                        obj.InputExpression.Value = '';
-                        obj.updateDisplay();
-                end
-  
-
-
-
-                function updateDisplay(obj)
-                        %{
-                                Updates the display to show the history of calculations or the current entry.
-                                This method needs to clear the existing text across all lines and repopulate the output lines based 
-                                on the history of lines/expressions and the current index.
-                        %}
-
-                        % Each time the display is updated, the existing output lines are cleared
-                        % and then reinitialized with the old lines up to the most recent line, which is initialized with the current entry
-                        set(obj.OutputLines, 'Text', '', 'FontWeight', 'normal', 'BackgroundColor', [0.65 0.65 0.65]);  % Grey
-
-
-                        % Find the widest expression in the history
-                        maxExprLength = 0;      %  Stores the length of the widest expression in the history of output
-                        for i = 1:length(obj.History)
-                                expression = obj.History{i};
-                                exprLength = length(expression);
-                                if exprLength > maxExprLength
-                                        maxExprLength = exprLength;
-                                end
-                        end
-
-
-
-                        startLine = max(1, obj.HistoryIndex - (obj.MAXIMUM_DISPLAY_OUTPUT_LINES - 1)); % Sets the starting output line to the last, highest index, history line(-4 is because there are 5 lines total, arbitrary and hardcoded)
-                        endLine = obj.HistoryIndex;
-
-
-                        for i = startLine:endLine
-                                lineIndex = obj.MAXIMUM_DISPLAY_OUTPUT_LINES - (endLine - i);
-                                expression = obj.History{i};
-                                % Calculate the number of spaces needed for alignment
-                                numSpaces = maxExprLength - length(expression);       % Based on the difference between the length of the widest expression and the length of the current
-
-                                % Format the text with spaces for alignment
-                                formattedText = [expression, repmat(' ', 1, numSpaces)];      % Concatenating the expression with the required number of spaces.
-                                
-
-                                obj.OutputLines(lineIndex).Text = formattedText; % Set the text of each line
-
-
-                                % Highlight the most recent entry line
-                                if i == obj.HistoryIndex
-                                        obj.OutputLines(lineIndex).FontWeight = 'bold';
-                                        obj.OutputLines(lineIndex).BackgroundColor =  [0.68, 0.85, 0.9];  % light blue
-                                else
-                                        obj.OutputLines(lineIndex).FontWeight = 'normal';
-                                        obj.OutputLines(lineIndex).BackgroundColor =  [0.875 0.875 0.875];
-                                end
-                        end
-                        obj.OccupiedOutputLineCount = 0;
-
-                end
-
-
-
-
-
-
-
-
+        % ---------- UI reactions ----------
+        function onInputChanged(obj, newValue)
+            % keep CalculationDisplay behavior
+            obj.CalculatorDisplay.updateInput(newValue);
+            obj.syncButtonEnable();
         end
+
+        function syncButtonEnable(obj)
+            hasText = ~isempty(obj.CalculatorDisplay.InputExpression.Value);
+            obj.BtnEnter.Enable = matlab.lang.OnOffSwitchState(hasText);
+            obj.BtnDel.Enable   = matlab.lang.OnOffSwitchState(hasText);
+            obj.BtnClear.Enable = matlab.lang.OnOffSwitchState(hasText);
+        end
+
+        function onKey(obj, e)
+            switch lower(e.Key)
+                case {'return','enter'}
+                    if strcmp(obj.BtnEnter.Enable,'on'), obj.calculateExpression(); end
+                case 'backspace'
+                    if strcmp(obj.BtnDel.Enable,'on'), obj.deleteLastCharacter(); end
+                case 'escape'
+                    if strcmp(obj.BtnClear.Enable,'on'), obj.clearExpression(); end
+            end
+        end
+
+        % ---------- Button actions ----------
+        function deleteLastCharacter(obj)
+            s = obj.CalculatorDisplay.InputExpression.Value;
+            if ~isempty(s)
+                obj.CalculatorDisplay.InputExpression.Value = s(1:end-1);
+                % mirror to display line & refresh enable state
+                obj.CalculatorDisplay.updateInput(obj.CalculatorDisplay.InputExpression.Value);
+                obj.syncButtonEnable();
+            end
+        end
+
+        function clearExpression(obj)
+            obj.CalculatorDisplay.InputExpression.Value = '';
+            obj.CalculatorDisplay.updateInput('');
+            obj.syncButtonEnable();
+        end
+
+        function calculateExpression(obj)
+            raw = obj.CalculatorDisplay.InputExpression.Value;
+            if isempty(raw), return; end
+
+            eng = ExpressionEngine();
+            [ok, evalStr, msg] = eng.sanitize(raw);
+            if ~ok
+                uialert(ancestor(obj.Grid,'figure'), msg, 'Error', 'Icon','error');
+                return;
+            end
+
+            try
+                val = eval(evalStr);                 % use your evaluator
+                obj.CalculatorDisplay.addEntry(val); % commits and keeps history
+                obj.CalculatorDisplay.InputExpression.Value = '';  % redundant but explicit
+                obj.CalculatorDisplay.updateInput('');             % start fresh live line
+                obj.syncButtonEnable();
+            catch ME
+                uialert(ancestor(obj.Grid,'figure'), ME.message, 'Evaluation error', 'Icon','error');
+            end
+        end
+
+        function showMenu(~)
+            % Placeholder – wire to your menu later
+        end
+    end
 end
-
-
-
-
-
-
-
-

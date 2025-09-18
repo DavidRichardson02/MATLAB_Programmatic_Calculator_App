@@ -1,10 +1,25 @@
+% ===================================================
+% ExpressionEngine 
+% ===================================================
 classdef ExpressionEngine
     % ExpressionEngine
+    %   Converts UI-friendly math text into eval-safe MATLAB math.
+    %     
     %  - Normalizes UI glyphs to MATLAB syntax (•, ÷, ≥, ≤, π, ln, √, etc.)
     %  - Strips whitespace
     %  - Tokenizes and validates expression grammar
     %  - Inserts implicit multiplication (e.g., 2π, 2(3+4), (2)(3))
     %  - Produces an eval-ready string
+    % 
+    % 
+    %   Pipeline in sanitize():
+    %     1) normalizeSymbols   — map glyphs (÷ ≥ ≤ π ln √ φ …) to ASCII / MATLAB
+    %     2) stripWhitespace    — remove spaces/tabs/newlines
+    %     3) tokenize           — NUM/ID/OP/CMP/L/R/COMMA stream using regex
+    %     4) validateBalanced   — parentheses / bracket matching
+    %     5) validateTokens     — whitelist IDs and basic numeric sanity
+    %     6) validateOperators  — context rules for operators/comparisons
+    %     7) stitch             — rebuild final eval string (constants if needed)
     %
     % Usage:
     %   eng = ExpressionEngine();

@@ -1,130 +1,125 @@
-%{
-MathematicalConstants class:
-      MathematicalConstants initializes buttons for mathematical constants such as π, e, √2, φ, and i.
-      It appends the value of these constants to the input expression when the respective
-      button is clicked, facilitating easy inclusion of these constants in calculations.
+% ===================================================
+% MathematicalConstants 
+% ===================================================
+classdef MathematicalConstants < RailItem
+    % MathematicalConstants
+    %   Rail item with quick-insert buttons for common constants.
+    %
+    % Buttons (label → payload appended to the input box)
+    %   π   → 'π'         (ExpressionEngine normalizes to 'pi')
+    %   e   → 'exp(1)'    (Euler's number)
+    %   √2  → 'sqrt(2)'
+    %   φ   → 'φ'         (ExpressionEngine normalizes to (1+sqrt(5))/2)
+    %   i   → '1i'
+    %
+    % Usage:
+    %   c = MathematicalConstants(parentRail, inputExpr, railRow, ...
+    %         'CalcDisplay', calcDisplay, 'Enabled', true, ...
+    %         'ButtonBG',[0 0.3470 0.6410], 'ButtonFG',[1 1 1], 'ButtonFS',14);
 
+    properties
+        % Optional live mirroring into CalculationDisplay
+        CalcDisplay = []
 
-        Hardcoding used for:
-                - The text and name for each mathematical constant button
-                - Assigning the callback function of each mathematical constant button 
-                - The positioning of each mathematical constant button
-%}
-classdef MathematicalConstants
-        properties
-                ParentContainer        % Parent container for the constants buttons
-                InputExpression        % Reference to the input expression edit field
-                DropdownButton     % Dropdown button to access mathematical constants
-                ConstantsPanel     % Panel to hold the mathematical constants buttons
+        % Behavior
+        Enabled   (1,1) logical = true
+
+        % Styling
+        ButtonBG   (1,3) double = [0 0.3470 0.6410];
+        ButtonFG   (1,3) double = [1 1 1];
+        ButtonFS   (1,1) double = 14;
+        RowSpacing (1,1) double = 5;
+        ColSpacing (1,1) double = 5;
+        Padding    (1,4) double = [5 5 5 5];
+    end
+
+    properties (Access=private)
+        Grid     matlab.ui.container.GridLayout
+        Buttons  matlab.ui.control.Button
+        Labels   cell
+        Payloads cell
+    end
+
+    methods
+        function obj = MathematicalConstants(parentRail, inputExpr, railRow, varargin)
+            % Collapsible rail header/panel
+            obj@RailItem(parentRail, inputExpr, railRow, '▼ π');
+
+            % Apply Name/Value options
+            for k = 1:2:numel(varargin)
+                name = string(varargin{k});
+                if isprop(obj, name)
+                    obj.(name) = varargin{k+1};
+                end
+            end
+
+            % Labels shown on buttons and payloads appended to input
+            obj.Labels   = {'π','e','√2','φ','i',''};       % last slot left empty
+            obj.Payloads = {'π','exp(1)','sqrt(2)','φ','1i',''};
+
+            % Internal grid (3 x 2)
+            obj.Grid = uigridlayout(obj.Panel, [3 2], ...
+                'RowHeight',   {30,30,30}, ...
+                'ColumnWidth', {'1x','1x'}, ...
+                'RowSpacing',  obj.RowSpacing, ...
+                'ColumnSpacing', obj.ColSpacing, ...
+                'Padding',     obj.Padding, ...
+                'Scrollable',  'on');
+
+            % Create buttons; skip empty filler
+            idx = 1;
+            for r = 1:3
+                for c = 1:2
+                    label = obj.Labels{idx};
+                    if ~isempty(label)
+                        payload = obj.Payloads{idx};
+                        b = uibutton(obj.Grid, 'Text', label, ...
+                            'BackgroundColor', obj.ButtonBG, ...
+                            'FontColor',       obj.ButtonFG, ...
+                            'FontSize',        obj.ButtonFS, ...
+                            'Tooltip',         sprintf('Insert %s', label), ...
+                            'ButtonPushedFcn', @(~,~) obj.append(payload));
+                        b.Layout.Row = r; b.Layout.Column = c;
+                    else
+                        % spacer: keep layout tidy
+                        uilabel(obj.Grid, 'Text','');
+                    end
+                    idx = idx + 1;
+                end
+            end
+
+            obj.applyEnabled();
         end
 
-
-
-
-
-
-        methods
-                function obj = MathematicalConstants(parent, inputExpr)
-                        %{
-                                Constructor for MathematicalConstants class. Initializes constants buttons.
-                        %}
-
-
-                        obj.ParentContainer = parent;
-                        obj.InputExpression = inputExpr;
-
-                        % Create a panel to hold the mathematical constants buttons
-                        obj.ConstantsPanel = uipanel(parent, 'Position', [60, 235, 75, 75], 'Visible', 'off', 'BackgroundColor', [0.75 0.75 0.75]);
-
-                        % Create a dropdown button with styling
-                        obj.DropdownButton = uibutton(parent, 'Text', '▼ π', ... % 
-                                'Position', [10, 235, 50, 30], 'ButtonPushedFcn', @(btn,event) obj.toggleConstantsPanel(), ...
-                                'BackgroundColor', [0.7 0.7 0.7]);
-
-                        % Create buttons for mathematical constants and add them to the panel
-                        obj.createButtons();
-                end
-
-
-
-
-
-
-
-
-                function createButtons(obj)
-                        %{
-                                Creates buttons for π and e, with their respective values.
-                        %}
-
-
-                        % Define mathematical constants and their positions
-                        constants = {'π', 'e', '√2', 'φ', 'i'};
-                        values = {'π', 'exp(1)', 'sqrt(2)', 'φ', '1i'};
-                        positions = [5, 40, 30, 30; 40, 40, 30, 30; 5, 5, 30, 30; 40, 5, 30, 30; 5, -30, 30, 30; 40, -30, 30, 30; 5, -65, 30, 30; 40, -65, 30, 30];
-
-
-
-
-                        % Iterate through constants to create buttons
-                        for i = 1:length(constants)
-                                const = constants{i};
-                                val = values{i};
-                                pos = positions(i, :);
-
-
-                                % Button creation with callback to append constant
-                                uibutton(obj.ConstantsPanel, 'Text', const, 'Position', pos, ...
-                                        'ButtonPushedFcn', @(btn,event) obj.appendToExpression(val));
-                        end
-                end
-
-
-
-
-
-
-
-
-                function toggleConstantsPanel(obj)
-                        % Toggle the visibility of the constants panel
-                        if strcmp(obj.ConstantsPanel.Visible, 'off')
-                                obj.ConstantsPanel.Visible = 'on';
-                        else
-                                obj.ConstantsPanel.Visible = 'off';
-                        end
-                end
-
-
-
-
-
-
-
-
-                function appendToExpression(obj, val)
-                        %{
-                                Appends the value of the selected constant to the input expression.
-                        %}
-
-
-                        currentExpr = obj.InputExpression.Value;
-                        obj.InputExpression.Value = [currentExpr, val];
-                end
-
-
-
-
-
-
-
-
-
-                
+        % Public toggle
+        function set.Enabled(obj, tf)
+            obj.Enabled = logical(tf);
+            obj.applyEnabled();
         end
+    end
+
+    methods (Access=private)
+        function applyEnabled(obj)
+            st = matlab.lang.OnOffSwitchState(obj.Enabled);
+            % Find all buttons in the grid (labels are fine to ignore)
+            kids = obj.Grid.Children;
+            for k = 1:numel(kids)
+                if isa(kids(k),'matlab.ui.control.Button')
+                    kids(k).Enable = st;
+                end
+            end
+        end
+
+        function append(obj, payload)
+            % Append payload and optionally mirror to CalculationDisplay
+            obj.InputExpression.Value = [obj.InputExpression.Value, payload];
+            if ~isempty(obj.CalcDisplay) && isvalid(obj.CalcDisplay)
+                try
+                    obj.CalcDisplay.updateInput(obj.InputExpression.Value);
+                catch
+                    % safe no-op if the display API changes
+                end
+            end
+        end
+    end
 end
-
-
-
-
-

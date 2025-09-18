@@ -1,83 +1,127 @@
-%{
-ExponentialLogarithm class:
-      ExponentialLogarithm manages buttons for exponential and logarithmic functions
-      such as exp, log, and ln. Allows users to include these functions in their
-      expressions, facilitating the construction of exponential and logarithmic operations
-      within the calculator.
+% =======================================
+% ExponentialLogarithm (rail item, 2x2)
+% =======================================
+classdef ExponentialLogarithm < RailItem
+    % ExponentialLogarithm
+    %   Rail item with buttons for exp / ln / log / log10.
+    %
+    % Usage:
+    %   w = ExponentialLogarithm(parentRail, inputExpr, railRow, ...
+    %           'CalcDisplay', calcDisplay, ...
+    %           'Enabled', true, ...
+    %           'ButtonBG', [0 0.3470 0.6410], 'ButtonFG', [1 1 1], 'ButtonFS', 14);
+    %
+    % Notes:
+    %   - Buttons append 'exp(', 'ln(', 'log(', 'log10(' respectively.
+    %   - If you pass CalcDisplay, presses also call
+    %     calcDisplay.updateInput(editField.Value) for live mirroring.
+    %   - Enable/disable toggles all buttons at once.
 
-        Hardcoding used for:
-                - The text and name for each exponential and logarithm function button
-                - Assigning the callback function of each function button
-                - The positioning of each function button
-%}
-classdef ExponentialLogarithm
-        properties
-                ParentContainer    % Parent container for the function buttons
-                InputExpression    % Reference to the input expression edit field
-                DropdownButton     % Dropdown button to access exponential and logarithm functions
-                FunctionsPanel     % Panel to hold the exponential and logarithm function buttons
+    properties
+        % External wiring
+        CalcDisplay = []                 % optional CalculationDisplay handle
+
+        % Behavior
+        Enabled   (1,1) logical = true   % quick on/off toggle
+
+        % Styling
+        ButtonBG   (1,3) double = [0 0.3470 0.6410];
+        ButtonFG   (1,3) double = [1 1 1];
+        ButtonFS   (1,1) double = 14;
+        RowSpacing (1,1) double = 5;
+        ColSpacing (1,1) double = 5;
+        Padding    (1,4) double = [5 5 5 5];
+    end
+
+    properties (Access=private)
+        Grid      matlab.ui.container.GridLayout
+        BtnExp    matlab.ui.control.Button
+        BtnLn     matlab.ui.control.Button
+        BtnLog    matlab.ui.control.Button
+        BtnLog10  matlab.ui.control.Button
+    end
+
+    methods
+        function obj = ExponentialLogarithm(parentRail, inputExpr, railRow, varargin)
+            % Header & collapsible panel via RailItem
+            obj@RailItem(parentRail, inputExpr, railRow, '▼ Exp/L');
+
+            % Parse name/value options into properties (ignore unknowns)
+            for k = 1:2:numel(varargin)
+                name = string(varargin{k});
+                if isprop(obj, name)
+                    obj.(name) = varargin{k+1};
+                end
+            end
+
+            % Internal grid (2x2), fills the collapsible panel
+            obj.Grid = uigridlayout(obj.Panel, [2 2], ...
+                'RowHeight',   {30, 30}, ...
+                'ColumnWidth', {'1x','1x'}, ...
+                'RowSpacing',  obj.RowSpacing, ...
+                'ColumnSpacing', obj.ColSpacing, ...
+                'Padding',     obj.Padding);
+
+            % Buttons
+            obj.BtnExp = uibutton(obj.Grid, 'Text','exp', ...
+                'BackgroundColor', obj.ButtonBG, 'FontColor', obj.ButtonFG, ...
+                'FontSize', obj.ButtonFS, ...
+                'Tooltip', 'Insert exp(', ...
+                'ButtonPushedFcn', @(~,~) obj.append('exp('));
+            obj.BtnExp.Layout.Row = 1; obj.BtnExp.Layout.Column = 1;
+
+            obj.BtnLn = uibutton(obj.Grid, 'Text','ln', ...
+                'BackgroundColor', obj.ButtonBG, 'FontColor', obj.ButtonFG, ...
+                'FontSize', obj.ButtonFS, ...
+                'Tooltip', 'Insert ln(', ...      % ExpressionEngine normalizes ln( → log(
+                'ButtonPushedFcn', @(~,~) obj.append('ln('));
+            obj.BtnLn.Layout.Row = 1; obj.BtnLn.Layout.Column = 2;
+
+            obj.BtnLog = uibutton(obj.Grid, 'Text','log', ...
+                'BackgroundColor', obj.ButtonBG, 'FontColor', obj.ButtonFG, ...
+                'FontSize', obj.ButtonFS, ...
+                'Tooltip', 'Insert log(', ...
+                'ButtonPushedFcn', @(~,~) obj.append('log('));
+            obj.BtnLog.Layout.Row = 2; obj.BtnLog.Layout.Column = 1;
+
+            obj.BtnLog10 = uibutton(obj.Grid, 'Text','log10', ...
+                'BackgroundColor', obj.ButtonBG, 'FontColor', obj.ButtonFG, ...
+                'FontSize', obj.ButtonFS, ...
+                'Tooltip', 'Insert log10(', ...
+                'ButtonPushedFcn', @(~,~) obj.append('log10('));
+            obj.BtnLog10.Layout.Row = 2; obj.BtnLog10.Layout.Column = 2;
+
+            obj.applyEnabled();
         end
 
-        methods
-                function obj = ExponentialLogarithm(parent, inputExpr)
-                        obj.ParentContainer = parent;
-                        obj.InputExpression = inputExpr;
-
-                        % Create a panel to hold the function buttons
-                        obj.FunctionsPanel = uipanel(parent, 'Position', [60, 115, 75, 75], 'Visible', 'off', 'BackgroundColor', [0.75 0.75 0.75]);
-
-                        % Create a dropdown button with styling
-                        obj.DropdownButton = uibutton(parent, 'Text', '▼Exp/Log', ...
-                                'Position', [10, 115, 50, 30], 'ButtonPushedFcn', @(btn,event) obj.toggleFunctionsPanel(), ...
-                                'BackgroundColor', [0.8 0.8 0.8]);
-
-                        % Create buttons for exponential and logarithm functions and add them to the panel
-                        obj.createButtons();
-                end
-
-                function createButtons(obj)
-                        % Define functions and their positions
-                        functions = {'exp', 'log', 'ln'};
-                        positions = [5, 40, 30, 30; 40, 40, 30, 30; 22.5, 5, 30, 30];
-
-                        % Iterate through functions to create buttons
-                        for i = 1:length(functions)
-                                func = functions{i};
-                                pos = positions(i, :);
-
-                                % Button creation with callback to append function
-                                uibutton(obj.FunctionsPanel, 'Text', func, 'Position', pos, ...
-                                        'ButtonPushedFcn', @(btn,event) obj.appendToExpression([func, '(']));
-                        end
-                end
-
-
-
-
-
-
-
-
-                function toggleFunctionsPanel(obj)
-                        % Toggle the visibility of the functions panel
-                        if strcmp(obj.FunctionsPanel.Visible, 'off')
-                                obj.FunctionsPanel.Visible = 'on';
-                        else
-                                obj.FunctionsPanel.Visible = 'off';
-                        end
-                end
-
-
-
-
-
-
-
-
-                function appendToExpression(obj, func)
-                        % Append function to input field
-                        currentExpr = obj.InputExpression.Value;
-                        obj.InputExpression.Value = [currentExpr, func];
-                end
+        % ===== Public toggles =====
+        function set.Enabled(obj, tf)
+            obj.Enabled = logical(tf);
+            obj.applyEnabled();
         end
+    end
+
+    methods (Access=private)
+        function applyEnabled(obj)
+            st = matlab.lang.OnOffSwitchState(obj.Enabled);
+            btns = [obj.BtnExp, obj.BtnLn, obj.BtnLog, obj.BtnLog10];
+            for b = btns
+                if ~isempty(b) && isvalid(b)
+                    b.Enable = st;
+                end
+            end
+        end
+
+        function append(obj, payload)
+            % Append the function call prefix and optionally mirror to display
+            obj.InputExpression.Value = [obj.InputExpression.Value, payload];
+            if ~isempty(obj.CalcDisplay) && isvalid(obj.CalcDisplay)
+                try
+                    obj.CalcDisplay.updateInput(obj.InputExpression.Value);
+                catch
+                    % safe no-op if CalcDisplay API differs
+                end
+            end
+        end
+    end
 end

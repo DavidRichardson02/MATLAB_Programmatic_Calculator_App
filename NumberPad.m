@@ -1,118 +1,106 @@
-%{ 
-NumberPad class:
-      Creates and manages the number pad for the calculator.
-      It initializes buttons for digits and handles their event callbacks,
-      allowing users to input numbers into the calculator by clicking buttons.
-        
+% ===========================
+% NumberPad (responsive 4 x 3)
+% ===========================
+classdef NumberPad < handle
+    % NumberPad
+    %   4x3 numeric keypad that appends its character to the shared EditField.
+    %   If the EditField has a ValueChangedFcn (CalculationDisplay wiring),
+    %   we trigger it so the live line mirrors immediately.
+    properties
+        Parent                 % parent container (panel or a grid cell)
+        Grid                   % internal uigridlayout (4 x 3)
+        InputExpression        % handle to CalculationDisplay.InputExpression
+        Buttons                % 4x3 array of button handles
+        Keys char = ['7','8','9', ...
+                     '4','5','6', ...
+                     '1','2','3', ...
+                     '0','.', '-'];   % default calculator layout
+        Enabled (1,1) logical = true
+    end
 
-        Hardcoding used for:
-                - The text and name for each digit button and each numeral button
-                - Assigning the callback function of each button 
-                - The positioning of each button
-%}
-classdef NumberPad
-        properties
-                ParentContainer        % Parent UI container
-                InputExpression        % Reference to the input expression field
+    methods
+        function obj = NumberPad(parentContainer, inputExpr, varargin)
+            % NumberPad(parentContainer, inputExpr, 'Keys',char(12), 'Enabled',true/false)
+            obj.Parent          = parentContainer;
+            obj.InputExpression = inputExpr;
+
+            % Parse name-value args
+            if ~isempty(varargin)
+                for k = 1:2:numel(varargin)
+                    obj.(varargin{k}) = varargin{k+1};
+                end
+            end
+
+            % Build internal grid so this widget is self-contained
+            obj.Grid = uigridlayout(parentContainer,[4 3], ...
+                'RowHeight',   {'1x','1x','1x','1x'}, ...
+                'ColumnWidth', {'1x','1x','1x'}, ...
+                'RowSpacing',10,'ColumnSpacing',10,'Padding',0);
+
+            % Create buttons
+            obj.Buttons = gobjects(4,3);
+            idx = 1;
+            for r = 1:4
+                for c = 1:3
+                    ch = obj.Keys(idx); idx = idx+1;
+                    btn = uibutton(obj.Grid, ...
+                        'Text', ch, ...
+                        'BackgroundColor',[0 0.3470 0.6410], ...
+                        'FontColor','white', ...
+                        'FontSize',14, ...
+                        'ButtonPushedFcn', @(~,~) obj.appendChar(ch));
+                    btn.Layout.Row = r; btn.Layout.Column = c;
+                    obj.Buttons(r,c) = btn;
+                end
+            end
+
+            obj.applyEnabled();
         end
 
-
-
-
-
-
-        methods
-                function obj = NumberPad(parent, inputExpr)
-                        %{                              
-                                Constructor for the NumberPad class. Initializes number buttons.
-                        %}  
-                        
-                        
-                        obj.ParentContainer = parent;
-                        obj.InputExpression = inputExpr;
-                        % Create number buttons
-                        obj.createButtons();
+        function set.Keys(obj, newKeys)
+            % Change layout on the fly (must be 12 chars)
+            validateattributes(newKeys, {'char','string'}, {'vector'});
+            newKeys = char(newKeys);
+            if numel(newKeys) ~= 12
+                error('Keys must contain exactly 12 characters.');
+            end
+            obj.Keys = newKeys;
+            % Update button captions to match
+            idx = 1;
+            for r = 1:4
+                for c = 1:3
+                    obj.Buttons(r,c).Text = obj.Keys(idx);
+                    idx = idx + 1;
                 end
-
-
-
-
-
-
-
-
-                function createButtons(obj)
-                        %{                              
-                                Dynamically creates buttons for digits 1-9, 0, '.', and '-' on the calculator UI.
-                                Initial setup for button positioning, top to bottom, left to right
-                                Assuming initPos is the bottom-left starting point for the first button
-                                The position for each button is calculated based on its row and column in the grid. 
-                        %}  
-                        
-                        
-                        % Move initial button position up to be just below the display(hardcoded)
-                        initPos = [75, 125, 55, 45];
-                        
-
-                        % The xOffset and yOffset are used to space the buttons apart.
-                        xOffset = 57.5; % Horizontal offset between buttons
-                        yOffset = 50; % Vertical offset between buttons
-                        numbers = '7894561230.-'; % Arrange as on a calculator
-                        
-                        
-
-                        % Create buttons in a 4x3 grid
-                        % (3 - row) in the vertical position calculation ensures that the grid starts from the top row(since screen coordinates in MATLAB originate from the bottom left).
-                        for row = 1:4
-                                for col = 1:3 
-                                num = numbers((row-1)*3 + col);
-                                pos = [initPos(1) + (col - 1) * xOffset, ...
-                                        initPos(2) + (3 - row) * yOffset, ...
-                                        initPos(3), initPos(4)];
-        
-                                % Button creation with callback to append number
-                                uibutton(obj.ParentContainer, 'Text', num, 'Position', pos, ...
-                                       'BackgroundColor', [0 0.3470 0.6410], ... % [0.25 0.25 0.25]~dark_gray, [0 0.2470 0.4410]~navy, [0 0.3470 0.6410]~math_blue, [0 0.4470 0.7410]~medium_blue,  [0.3010 0.7450 0.9330]~light_blue
-                                     'FontColor', 'white', ... 
-                                      'ButtonPushedFcn', @(btn,event) obj.appendToExpression(num));
-                                end
-                        end
-                end
-
-
-
-
-
-
-
-
-                function appendToExpression(obj, char)
-                        %{                              
-                                Appends the clicked number or character to the calculator's input expression.
-                        %}  
-                          
-                        
-                        % Append character to input field
-                        currentExpr = obj.InputExpression.Value;
-                        obj.InputExpression.Value = [currentExpr, char];
-                end
-
-
-
-
-
-
-
-
+            end
         end
+
+        function set.Enabled(obj, tf)
+            obj.Enabled = logical(tf);
+            obj.applyEnabled();
+        end
+
+        function applyEnabled(obj)
+            state = matlab.lang.OnOffSwitchState(obj.Enabled);
+            for k = 1:numel(obj.Buttons)
+                obj.Buttons(k).Enable = state;
+            end
+        end
+
+        function appendChar(obj, ch)
+            if ~obj.Enabled, return; end
+            obj.InputExpression.Value = [obj.InputExpression.Value, ch];
+
+            % If your CalculationDisplay relies on ValueChangedFcn to mirror
+            % the input into the highlighted history line, trigger it safely.
+            try
+                fcn = obj.InputExpression.ValueChangedFcn;
+                if ~isempty(fcn)
+                    fcn(obj.InputExpression, []);
+                end
+            catch
+                % ignore if user code replaced/removed the callback
+            end
+        end
+    end
 end
-
-
-
-
-
-
-
-
-
-
