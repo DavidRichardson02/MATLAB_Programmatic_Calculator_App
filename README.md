@@ -6,6 +6,10 @@ Each functional area is encapsulated in its own class (see table below), enablin
 
 ---
 
+
+
+
+
 ## 🧩 Architecture Overview
 
 | Core Class               | Responsibility                                                                          |
@@ -26,8 +30,12 @@ Each functional area is encapsulated in its own class (see table below), enablin
 > * Reuse the engine in a larger app
 > * Unit-test each component in isolation
 
-<\ br>
-<\ br>
+
+
+<br>
+<br>
+
+
 
 [NumberPad / Operators / Rail Items / Keyboard]
                  │  (append tokens)
@@ -35,9 +43,9 @@ Each functional area is encapsulated in its own class (see table below), enablin
       CalculationDisplay.InputExpression (uieditfield)
                  │  (ValueChangedFcn → live mirroring)
                  ▼
-     CalculationDisplay.updateInput(...)  ← live “current line”
+     CalculationDisplay.updateInput(...)   ← live “current line”
                  │
-  [User hits Enter / clicks enter]
+        [User hits Enter / clicks enter]
                  │
                  ▼
       ActionButtons.calculateExpression(...)
@@ -51,11 +59,13 @@ Each functional area is encapsulated in its own class (see table below), enablin
           CalculationDisplay.addEntry(result)
                  │
                  ▼
-      CalculationDisplay.updateDisplay()  (history + highlight)
+      CalculationDisplay.updateDisplay()   (history + highlight)
 
 
-<\ br>
-<\ br>
+
+<br>
+<br>
+
 
 ---
 
@@ -100,22 +110,22 @@ Each functional area is encapsulated in its own class (see table below), enablin
 
 
 
-<\ br>
-<\ br>
+<br>
+<br>
 
 
 <img width="527" height="701" alt="Screenshot 2025-09-17 at 11 05 41 PM" src="https://github.com/user-attachments/assets/4ef46c81-2c2c-4b65-bd92-014ff16e3283" />
 
 
 
-<\ br>
+<br>
 
 
 https://github.com/user-attachments/assets/1b61265a-2bd2-424c-aca5-61bff4e746da
 
 
-<\ br>
-<\ br>
+<br>
+<br>
 
 
 
