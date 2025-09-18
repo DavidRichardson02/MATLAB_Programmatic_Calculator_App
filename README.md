@@ -32,70 +32,28 @@ Each functional area is encapsulated in its own class (see table below), enablin
 
 
 
-<br>
-<br>
-
-[NumberPad / Operators / Rail Items / Keyboard]
-                 │  (append tokens)
-                 ▼
-      CalculationDisplay.InputExpression (uieditfield)
-                 │  (ValueChangedFcn → live mirroring)
-                 ▼
-     CalculationDisplay.updateInput(...)  ← live “current line”
-                 │
-  [User hits Enter / clicks enter]
-                 │
-                 ▼
-      ActionButtons.calculateExpression(...)
-                 │
-                 ├─> ExpressionEngine.sanitize(raw)
-                 │     (normalize → strip → tokenize → validate → stitch)
-                 │
-                 └─> eval(evalStr)   ← can be swapped for a pure evaluator
-                       │
-                       ▼
-          CalculationDisplay.addEntry(result)
-                 │
-                 ▼
-      CalculationDisplay.updateDisplay()  (history + highlight)
-
-
-
-
-
-
-<br>
-<br>
-
-[NumberPad / Operators / Rail Items / Keyboard]
-                 │  (append tokens)
-                 ▼
-      CalculationDisplay.InputExpression (uieditfield)
-                 │  (ValueChangedFcn → live mirroring)
-                 ▼
-     CalculationDisplay.updateInput(...)  ← live “current line”
-                 │
-  [User hits Enter / clicks enter]
-                 │
-                 ▼
-      ActionButtons.calculateExpression(...)
-                 │
-                 ├─> ExpressionEngine.sanitize(raw)
-                 │     (normalize → strip → tokenize → validate → stitch)
-                 │
-                 └─> eval(evalStr)   ← can be swapped for a pure evaluator
-                       │
-                       ▼
-          CalculationDisplay.addEntry(result)
-                 │
-                 ▼
-      CalculationDisplay.updateDisplay()  (history + highlight)
-
 
 <br>
 <br>
 
 
+flowchart TD
+  A[NumberPad / Operators / Rail Items / Keyboard] -->|append tokens| B[CalculationDisplay.InputExpression (uieditfield)]
+  B -->|ValueChangedFcn → live mirroring| C[CalculationDisplay.updateInput(...) ← live “current line”]
+  C --> D[[User hits Enter / clicks enter]]
+  D --> E[ActionButtons.calculateExpression(...)]
+  E --> F[ExpressionEngine.sanitize(raw)]
+  F -->|normalize → strip → tokenize → validate → stitch| G(evalStr)
+  E --> G
+  G --> H[[eval(evalStr)  ↺ can be swapped for pure evaluator]]
+  H --> I[CalculationDisplay.addEntry(result)]
+  I --> J[CalculationDisplay.updateDisplay() (history + highlight)]
+
+
+<br>
+<br>
+
+  
 ---
 
 
