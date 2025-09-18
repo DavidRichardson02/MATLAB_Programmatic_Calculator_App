@@ -50,7 +50,7 @@ classdef ExpressionEngine
 
         % Whitelisted constants/identifiers (extend as needed)
         % 'phi' will be stitched to (1+sqrt(5))/2 if it survives tokens.
-        Consts = {'pi','i','j','phi'};
+        Consts = {'pi','i','j','phi','ans'};
     end
 
     methods
@@ -77,10 +77,215 @@ classdef ExpressionEngine
                 msg = ME.message;
             end
         end
+    
+
+
+
+
+
+function [ok, value, msg, printableExpr] = evaluate(obj, raw, model)
+% EVALUATE  Phase-0 front door: normalize → tokenize → implicit mult
+%           → assignment/variables → deg/rad → safe eval
+    msg = ''; printableExpr = '';
+    
+    try
+        % 1) Normalize and strip
+        s = obj.normalizeSymbols(raw);
+        s = obj.stripWhitespace(s);
+
+        % 2) Tokenize + basic validations (yours)
+        [toks, kinds] = obj.tokenize(s);
+        obj.validateBalanced(toks, kinds);
+        obj.validateTokens(toks, kinds);
+        obj.validateOperators(toks, kinds);
+
+        % 3) Insert implicit multiplication (2pi, 2(3+4), (2)(3), pi(2+3), etc.)
+        %[toks, kinds] = obj.insertImplicitMultiplication(toks, kinds);
+
+        % 4) Detect assignment:   <name> '=' <expr>
+        meta = obj.detectAssignment(toks, kinds);
+
+        % 5) Rewrite identifiers for variables & constants; wrap trig for deg
+        expr = obj.buildExpressionString(toks, kinds, model, meta);
+
+        printableExpr = expr;   % what gets shown in history as the "expr" column
+        printableExpr = char(expr);  % ensure char for any downstream use
+
+
+        % 6) Evaluate in a SAFE scope: only whitelisted funcs + provided vars
+        value = obj.safeEval(expr, model);
+
+        % 7) Persist vars / ans
+        if meta.isAssignment
+            model.Vars.(meta.name) = value;
+        end
+        model.Vars.ans = value;
+
+        ok = true;
+
+    catch ME
+        ok = false;
+        value = [];
+        msg = ME.message;
+    end
+end
+
+
+
+
+
+function [t2,k2] = insertImplicitMultiplication(obj, t, k)
+    isValL     = @(kk) (kk=="NUM") | (kk=="ID") | (kk=="R");
+    isStartR   = @(kk) (kk=="NUM") | (kk=="ID") | (kk=="L");
+    isFuncAt   = @(idx) (k{idx}=="ID") && (idx<numel(t)) && k{idx+1}=="L" ...
+                        && ismember(t{idx}, obj.Funcs);
+
+    outT = {}; outK = {};
+    for i = 1:numel(t)
+        outT{end+1} = t{i}; outK{end+1} = k{i}; %#ok<AGROW>
+        if i < numel(t) && isValL(k{i}) && isStartR(k{i+1})
+            % Insert unless it's a known function call like sin(
+            if ~(k{i}=="ID" && k{i+1}=="L" && isFuncAt(i))
+                outT{end+1} = '*'; outK{end+1} = "OP"; %#ok<AGROW>
+            end
+        end
+    end
+    t2 = outT; k2 = outK;
+end
+
+
+
+function meta = detectAssignment(~, t, k)
+    meta = struct('isAssignment',false,'name','','rhsIdx',1);
+    if numel(t) >= 3 && k{1}=="ID" && strcmp(t{2},'=')
+        meta.isAssignment = true;
+        meta.name = t{1};
+        meta.rhsIdx = 3;
+    end
+end
+
+
+
+
+
+
+
+function expr = buildExpressionString(obj, t, k, model, meta)
+    % Convert token stream back to a string expression with:
+    %  - user variables: unknown IDs become model.Vars.<id>
+    %  - constants: pi stays pi; i/j stay i/j; phi already expanded earlier
+    %  - degree mode: wrap sin/cos/tan/asin/acos/atan appropriately
+    %
+    % We'll rebuild once while applying rules. We only process RHS if assignment.
+    startIdx = meta.rhsIdx;
+    funs = obj.Funcs;            % from your whitelist
+    consts = obj.Consts;         % pi, i, j, phi
+    deg = strcmpi(model.AngleMode,'deg');
+
+    out = strings(1,0);
+
+    i = startIdx;
+    while i <= numel(t)
+        tok = t{i}; kind = k{i};
+
+        if kind == "ID"
+            id = tok;
+
+            % Function call? (ID followed by '(')
+            if i < numel(t) && k{i+1} == "L"
+                % Degree-mode wrappers:
+                if deg && any(strcmp(id, {'sin','cos','tan'}))
+                    out(end+1) = id + '((pi/180)*';  % open extra paren
+                    % We'll rely on the existing right ')' to close; add one more at the very end.
+                    % Track balance:
+                    [i, out] = emitCallBody(out, t, k, i+2);   % i currently at ID, i+1 is '('
+                    out(end+1) = ')';  % close our wrapper
+                    continue
+                elseif deg && any(strcmp(id, {'asin','acos','atan'}))
+                    % asin(x) -> (180/pi)*asin(x)
+                    out(end+1) = '(180/pi)*' + id + '(';
+                    [i, out] = emitCallBody(out, t, k, i+2);
+                    out(end+1) = ')';
+                    continue
+                else
+                    % Normal function call
+                    out(end+1) = id + '(';
+                    [i, out] = emitCallBody(out, t, k, i+2);
+                    out(end+1) = ')';
+                    continue
+                end
+            end
+
+            % Not a function. If not a constant or whitelisted, treat as variable.
+            if ~ismember(id, [funs consts "ans"])
+                id = "model.Vars." + id;  % variable reference
+            end
+            out(end+1) = string(id);
+
+        else
+            % All other tokens as-is (ops, numbers, delimiters, commas, comparisons)
+            out(end+1) = string(tok);
+        end
+
+        i = i + 1;
     end
 
+    expr = strjoin(out, "");
+    expr = char(expr);           % <- add this line
+
+
+
+    % ---- helpers ----
+    function [j, outS] = emitCallBody(outS, T, K, j)
+        % Emits tokens until the matching ')' is consumed. Assumes T{j-1} was '('.
+        depth = 1;
+        while j <= numel(T)
+            tok2 = T{j}; kind2 = K{j};
+            if kind2=="L", depth = depth + 1; end
+            if kind2=="R", depth = depth - 1; end
+            outS(end+1) = string(tok2); %#ok<AGROW>
+            if kind2=="R" && depth==0, break; end
+            j = j + 1;
+        end
+    end
+end
+
+
+
+
+
+
+function val = safeEval(obj, expr, model)
+% Evaluate expression with a restricted function environment
+
+
+    % Ensure char vector, not string scalar
+    if isstring(expr), expr = char(expr); end   
+
+
+    % Whitelist math function handles (pull from your whitelist)
+    wh = model.Vars;
+    % Core ops will be parsed directly; functions needed:
+    for f = obj.Funcs
+        wh.(f{1}) = str2func(f{1});
+    end
+    % Constant i/j
+    i = 1i; j = 1i; %#ok<NASGU,ASGLU> 
+    pi = builtin('pi'); %#ok<NASGU>
+
+    % Evaluate in a local function workspace so only whitelisted names + model exist
+    val = eval(expr);   %#ok<EVLDIR> % still eval, but scope-limited to locals
+    % NOTE: expr refers to things like sin, cos, sqrt, model.Vars.x, etc.
+end
+
+
+
+
+
+
+    
     %% === Normalization ===
-    methods (Access=private)
+    %methods (Access=private)
         function s = normalizeSymbols(~, s)
             % Map UI glyphs / aliases to MATLAB equivalents
             % arithmetic
@@ -117,10 +322,12 @@ classdef ExpressionEngine
         function s = stripWhitespace(~, s)
             s = regexprep(s, '\s+', '');
         end
-    end
+    %end
+
+
 
     %% === Tokenization ===
-    methods (Access=private)
+    %methods (Access=private)
         function [toks, kinds] = tokenize(~, s)
             % Token categories:
             %  NUM:   integer/decimal/scientific: 12, .5, 5., 1.2e-3
@@ -174,10 +381,14 @@ classdef ExpressionEngine
                 i = i + strlength(toks{end});
             end
         end
-    end
+    %end
 
+
+
+
+    
     %% === Validation ===
-    methods (Access=private)
+    %methods (Access=private)
         function validateBalanced(obj, toks, kinds)
             % Balanced (), [], {}
             stack = strings(0);
@@ -197,10 +408,18 @@ classdef ExpressionEngine
             end
         end
 
+
+
+
+
         function tf = matchedPair(~, l, r)
             pairs = struct('(',')','[',']','{','}');
             tf = isfield(pairs, l) && strcmp(pairs.(l), r);
         end
+
+
+
+
 
         function validateTokens(obj, toks, kinds)
             % Validate identifiers (functions/constants), and simple number sanity
@@ -222,6 +441,9 @@ classdef ExpressionEngine
                 end
             end
         end
+
+
+
 
         function validateOperators(~, toks, kinds)
             % Contextual operator rules (after normalization)
@@ -296,10 +518,17 @@ classdef ExpressionEngine
                 end
             end
         end
-    end
+    
+
+
+
+
+
+
+
 
     %% === Stitch back to eval-ready ===
-    methods (Access=private)
+    %methods (Access=private)
         function out = stitch(obj, toks, kinds)
             % Convert identifiers that stand for constants where needed.
             % Example: keep 'pi' as is; leave functions and numbers unchanged.
@@ -319,5 +548,8 @@ classdef ExpressionEngine
             end
             out = strjoin(outParts, "");
         end
-    end
+ end
+
 end
+
+

@@ -38,6 +38,8 @@ classdef TrigonometricFunctions < RailItem
         RowSpacing (1,1) double = 5;
         ColSpacing (1,1) double = 5;
         Padding    (1,4) double = [5 5 5 5];
+
+        
     end
 
     properties (Access=private)

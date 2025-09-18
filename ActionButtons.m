@@ -17,15 +17,24 @@ classdef ActionButtons < handle
         BtnEnter               matlab.ui.control.Button
         BtnDel                 matlab.ui.control.Button
         BtnMenu                matlab.ui.control.Button
+
+        Model AppModel
+        AngleMode     (1,:) char    = 'rad'   % 'rad' | 'deg'
     end
 
     methods
-        function obj = ActionButtons(parentContainer, calcDisplay)
+        function obj = ActionButtons(parentContainer, calcDisplay, model)
             % parentContainer: a uigridlayout cell OR a uipanel
             % calcDisplay:     your CalculationDisplay instance
             obj.Parent            = parentContainer;
             obj.CalculatorDisplay = calcDisplay;
+            obj.Model = model;
 
+
+
+
+
+            
             % Create an internal grid if the parent isn't already a grid cell
             if isa(parentContainer,'matlab.ui.container.GridLayout')
                 g = parentContainer;   % use the caller's grid directly
@@ -66,6 +75,8 @@ classdef ActionButtons < handle
             end
         end
 
+
+        
         % ---------- UI reactions ----------
         function onInputChanged(obj, newValue)
             % keep CalculationDisplay behavior
@@ -73,12 +84,18 @@ classdef ActionButtons < handle
             obj.syncButtonEnable();
         end
 
+
+
+
         function syncButtonEnable(obj)
             hasText = ~isempty(obj.CalculatorDisplay.InputExpression.Value);
             obj.BtnEnter.Enable = matlab.lang.OnOffSwitchState(hasText);
             obj.BtnDel.Enable   = matlab.lang.OnOffSwitchState(hasText);
             obj.BtnClear.Enable = matlab.lang.OnOffSwitchState(hasText);
         end
+
+
+
 
         function onKey(obj, e)
             switch lower(e.Key)
@@ -91,16 +108,41 @@ classdef ActionButtons < handle
             end
         end
 
+
+
+
+        
         % ---------- Button actions ----------
         function deleteLastCharacter(obj)
             s = obj.CalculatorDisplay.InputExpression.Value;
-            if ~isempty(s)
-                obj.CalculatorDisplay.InputExpression.Value = s(1:end-1);
-                % mirror to display line & refresh enable state
-                obj.CalculatorDisplay.updateInput(obj.CalculatorDisplay.InputExpression.Value);
-                obj.syncButtonEnable();
+            if isempty(s), return; end
+        
+            % Whole-token endings to strip (ordered longest-first)
+            endings = ["log10(", "atanh(", "acosh(", "asinh(", ...
+                "tanh(", "cosh(", "sinh(", "asin(", "acos(", "atan(", ...
+                "sqrt(", "log(", "exp(", ...
+                "pi", "φ", "≥", "≤", "≠", ">=", "<=", "~="];
+            
+            for e = endings
+                if endsWith(s, e)
+                    s = extractBefore(s, strlength(s) - strlength(e) + 1);
+                    obj.CalculatorDisplay.InputExpression.Value = s;
+                    obj.CalculatorDisplay.updateInput(s);
+                    obj.syncButtonEnable();
+                    return
+                end
             end
+        
+            % Fall back to single-character delete
+            s = s(1:end-1);
+            obj.CalculatorDisplay.InputExpression.Value = s;
+            obj.CalculatorDisplay.updateInput(s);
+            obj.syncButtonEnable();
         end
+
+
+
+
 
         function clearExpression(obj)
             obj.CalculatorDisplay.InputExpression.Value = '';
@@ -108,28 +150,39 @@ classdef ActionButtons < handle
             obj.syncButtonEnable();
         end
 
+
+
+
+
         function calculateExpression(obj)
             raw = obj.CalculatorDisplay.InputExpression.Value;
             if isempty(raw), return; end
+            
+
 
             eng = ExpressionEngine();
-            [ok, evalStr, msg] = eng.sanitize(raw);
+            [ok, value, msg, printable] = eng.evaluate(raw, obj.Model);
             if ~ok
                 uialert(ancestor(obj.Grid,'figure'), msg, 'Error', 'Icon','error');
                 return;
             end
 
-            try
-                val = eval(evalStr);                 % use your evaluator
-                obj.CalculatorDisplay.addEntry(val); % commits and keeps history
-                obj.CalculatorDisplay.InputExpression.Value = '';  % redundant but explicit
-                obj.CalculatorDisplay.updateInput('');             % start fresh live line
-                obj.syncButtonEnable();
-            catch ME
-                uialert(ancestor(obj.Grid,'figure'), ME.message, 'Evaluation error', 'Icon','error');
-            end
+
+            % Commit result (printable is the expression actually evaluated after normalization)
+            % You currently right-align expr/result on one line; keep that behavior:
+            obj.CalculatorDisplay.InputExpression.Value = printable;
+            obj.CalculatorDisplay.addEntry(value);
+
+
+
+            % reset input
+            obj.CalculatorDisplay.InputExpression.Value = '';
+            obj.CalculatorDisplay.updateInput('');
+            obj.syncButtonEnable();
         end
 
+
+        
         function showMenu(~)
             % Placeholder – wire to your menu later
         end

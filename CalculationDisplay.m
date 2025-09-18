@@ -166,9 +166,6 @@ classdef CalculationDisplay < handle
         
         function updateInput(obj, newValue)
                 % commented out, so the live line never changes visually.
-
-
-                
             % Mirror the input field into the "current" history line.
            % if isempty(obj.History) || obj.HistoryIndex == numel(obj.History)
             %    obj.History{end} = newValue;
@@ -202,8 +199,8 @@ classdef CalculationDisplay < handle
             % Format with alignment (same as before)
             labelWidth = 428; 
             charWidth = 10;  
-            numSpaces = floor((labelWidth - (length(obj.InputExpression.Value) + length(solution)) * charWidth) / charWidth);
-            formattedResult = [obj.InputExpression.Value, repmat(' ', 1, max(numSpaces, 0)), solution];
+            numSpaces = floor((labelWidth - (length(expression) + length(solution)) * charWidth) / charWidth);
+            formattedResult = [expression, repmat(' ', 1, max(numSpaces, 0)), solution];
 
 
             obj.History{end+1} = formattedResult;

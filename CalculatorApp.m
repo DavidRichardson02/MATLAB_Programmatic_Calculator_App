@@ -27,6 +27,9 @@ classdef CalculatorApp
         RelationalSymbols      % > < ≥ ≤
         CommonDelimiters       % , : () [] {}
         AlphaPad               % A–F (hex)
+
+        Model    % shared state
+        AngleLabel matlab.ui.control.Label
     end
 
     methods
@@ -36,6 +39,9 @@ classdef CalculatorApp
                 'Position',[100 100 520 640]);
             movegui(app.MainFigure,'center');
 
+            app.Model = AppModel();             % <— create shared state
+
+          
 
 
             
@@ -83,10 +89,13 @@ classdef CalculatorApp
                 'ColumnWidth',{'1x'}, ...
                 'RowSpacing',10, 'Padding',0);
 
-            % If your class ctors accept (parent, inputExpr, rowIndex):
+
+
+            % Trig pad: pass model so the angle dropdown can set it
             app.TrigonometricFunctions = TrigonometricFunctions( ...
                 leftRail, app.CalculationDisplay.InputExpression, 1, ...
-                'CalcDisplay', app.CalculationDisplay);   % optional live mirroring
+                'CalcDisplay', app.CalculationDisplay, ...
+                 'Model', app.Model );   % optional live mirroring
 
 
          
@@ -99,8 +108,7 @@ classdef CalculatorApp
             
             app.CommonDelimiters       = CommonDelimiters(      leftRail, app.CalculationDisplay.InputExpression, 3);
             app.RelationalSymbols      = RelationalSymbols(     leftRail, app.CalculationDisplay.InputExpression, 4);
-            %app.ExponentialLogarithm   = ExponentialLogarithm(  leftRail, app.CalculationDisplay.InputExpression, 5);
-
+  
             
             app.ExponentialLogarithm = ExponentialLogarithm( ...
                 leftRail, app.CalculationDisplay.InputExpression, 5, ...
@@ -121,19 +129,37 @@ classdef CalculatorApp
                 
 
             % Action row(row 1)
-            actionRow = uigridlayout(centerGrid,[1 4], ...
+            actionRow = uigridlayout(centerGrid,[1 5], ...
                 'ColumnWidth', {'1x','1x','1x','1x'}, ...
                 'RowHeight', {40}, 'ColumnSpacing', 10, 'Padding', 0);
             actionRow.Layout.Row = 1;
-            app.ActionButtons = ActionButtons(actionRow, app.CalculationDisplay);
-                 
+            app.ActionButtons = ActionButtons(actionRow, app.CalculationDisplay, app.Model);                      % Action row: give it both the display and model    
+
+
+
+
+
+            % You already built actionRow as [1 x 4]. We'll reuse col 4 for the label
+            app.AngleLabel = uilabel(actionRow,'Text','rad', ...
+                'FontWeight','bold');
+            app.AngleLabel.Layout.Row = 1; 
+            app.AngleLabel.Layout.Column = 5;
+
+            % Keep label in sync with Model.AngleMode
+            %addlistener(app.Model,'AngleMode','PostSet', ...
+            %     @(~,~) set(app.AngleLabel,'Text',app.Model.AngleMode));
+
+                
+
+
+
 
 
             % NumberPad (row 2) – grid is 4x3, so give 4 row heights & 3 column widths
             numPadGrid = uigridlayout(centerGrid,[4 3], ...
                 'RowHeight', {'fit','fit','fit','fit'}, ...
                 'ColumnWidth', {'fit','fit','fit'}, ...
-                'RowSpacing', 10, 'ColumnSpacing', 10, 'Padding', 0);
+                'RowSpacing', 2, 'ColumnSpacing', 2, 'Padding', 0);
             numPadGrid.Layout.Row = 2;
             app.NumberPad = NumberPad(numPadGrid, app.CalculationDisplay.InputExpression);
                 
@@ -143,7 +169,7 @@ classdef CalculatorApp
             alphaBelow = uigridlayout(centerGrid,[2 3], ...
                 'RowHeight', {'1x','1x'}, ...
                 'ColumnWidth', {'1x','1x','1x'}, ...
-                'RowSpacing', 10, 'ColumnSpacing', 10, 'Padding', 0);
+                'RowSpacing', 5, 'ColumnSpacing', 5, 'Padding', 0);
             alphaBelow.Layout.Row = 3;
             app.AlphaPad = AlphaPad(alphaBelow, app.CalculationDisplay.InputExpression, ...
                 'CalcDisplay', app.CalculationDisplay, 'Uppercase', true, 'Enabled', true);
@@ -169,7 +195,7 @@ classdef CalculatorApp
             app.ArithmeticOperators = ArithmeticOperators( ...
                 opsGrid, app.CalculationDisplay.InputExpression, ...
                 'CalcDisplay', app.CalculationDisplay, ...   % optional live mirroring
-                'UseASCII', false, ...                       % use pretty • and ÷
+                'UseASCII', true, ...                       % use pretty • and ÷
                 'Enabled',  true);
 
 
