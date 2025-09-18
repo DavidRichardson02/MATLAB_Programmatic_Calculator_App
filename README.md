@@ -35,28 +35,61 @@ Each functional area is encapsulated in its own class (see table below), enablin
 <br>
 <br>
 
+[NumberPad / Operators / Rail Items / Keyboard]
+                 │  (append tokens)
+                 ▼
+      CalculationDisplay.InputExpression (uieditfield)
+                 │  (ValueChangedFcn → live mirroring)
+                 ▼
+     CalculationDisplay.updateInput(...)  ← live “current line”
+                 │
+  [User hits Enter / clicks enter]
+                 │
+                 ▼
+      ActionButtons.calculateExpression(...)
+                 │
+                 ├─> ExpressionEngine.sanitize(raw)
+                 │     (normalize → strip → tokenize → validate → stitch)
+                 │
+                 └─> eval(evalStr)   ← can be swapped for a pure evaluator
+                       │
+                       ▼
+          CalculationDisplay.addEntry(result)
+                 │
+                 ▼
+      CalculationDisplay.updateDisplay()  (history + highlight)
 
-flowchart TD
-    %% Architecture & Data Flow (Calculator App)
 
-    A[[NumberPad / Operators / Rail Items / Keyboard]]
-    A -- "append tokens" --> B[CalculationDisplay.InputExpression<br/>(uieditfield)]
 
-    B -- "ValueChangedFcn → live mirroring" --> C[CalculationDisplay.updateInput(...)<br/>← live “current line”]
 
-    C --> D{{User hits Enter / clicks enter}}
 
-    D --> E[ActionButtons.calculateExpression(...)]
 
-    E --> F[ExpressionEngine.sanitize(raw)]
-    F -- "normalize → strip → tokenize → validate → stitch" --> G[eval-ready string]
+<br>
+<br>
 
-    G --> H[eval(evalStr)<br/>(can be swapped for a pure evaluator)]
-
-    H --> I[CalculationDisplay.addEntry(result)]
-
-    I --> J[CalculationDisplay.updateDisplay()<br/>(history + highlight)]
-
+[NumberPad / Operators / Rail Items / Keyboard]
+                 │  (append tokens)
+                 ▼
+      CalculationDisplay.InputExpression (uieditfield)
+                 │  (ValueChangedFcn → live mirroring)
+                 ▼
+     CalculationDisplay.updateInput(...)  ← live “current line”
+                 │
+  [User hits Enter / clicks enter]
+                 │
+                 ▼
+      ActionButtons.calculateExpression(...)
+                 │
+                 ├─> ExpressionEngine.sanitize(raw)
+                 │     (normalize → strip → tokenize → validate → stitch)
+                 │
+                 └─> eval(evalStr)   ← can be swapped for a pure evaluator
+                       │
+                       ▼
+          CalculationDisplay.addEntry(result)
+                 │
+                 ▼
+      CalculationDisplay.updateDisplay()  (history + highlight)
 
 
 <br>
