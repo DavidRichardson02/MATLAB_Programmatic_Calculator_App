@@ -1,44 +1,121 @@
 # MATLAB Scientific Calculator — Modular UI Library
 
-**Serial‑class, fully‑programmatic calculator built with native MATLAB UI components.**  
-Instead of one monolithic `.m` file, every functional area lives in its own class (see diagram below), so you can drop in or extend only the parts you need.
+
+**A serial-class, fully programmatic calculator built with native MATLAB UI components.**
+Each functional area is encapsulated in its own class (see table below), enabling you to extend or replace individual modules without touching the rest of the system.
+
+---
+
+## 🧩 Architecture Overview
+
+| Core Class               | Responsibility                                                                          |
+| ------------------------ | --------------------------------------------------------------------------------------- |
+| `CalculatorApp`          | Entry point — creates the main `uifigure`, lays out the UI, and wires modules together. |
+| `CalculationDisplay`     | Unified scrollable output panel and editable input field with command history.          |
+| `NumberPad`, `AlphaPad`  | Provide numeric (`0–9`, `.`, `-`) and hexadecimal (`A–F`) input buttons.                |
+| `ArithmeticOperators`    | `+  −  ×  ÷` buttons with safe callbacks and symbol normalization.                      |
+| `TrigonometricFunctions` | Drop-down panel with `sin`, `cos`, `tan` plus inverse/hyperbolic toggles.               |
+| `ExponentialLogarithm`   | Drop-down panel with `exp`, `ln`, `log`, `log10`, auto-inserts `(`.                     |
+| `RelationalSymbols`      | Inserts comparison operators: `<  >  ≤  ≥`.                                             |
+| `CommonDelimiters`       | Inserts brackets, braces, colons, and commas.                                           |
+| `ActionButtons`          | Handles **del / clear / enter / menu**, validates before `eval`.                        |
+
+> **Why modular?**
+>
+> * Swap out individual modules (pads, rails, display)
+> * Reuse the engine in a larger app
+> * Unit-test each component in isolation
+
+<\ br>
+<\ br>
+
+[NumberPad / Operators / Rail Items / Keyboard]
+                 │  (append tokens)
+                 ▼
+      CalculationDisplay.InputExpression (uieditfield)
+                 │  (ValueChangedFcn → live mirroring)
+                 ▼
+     CalculationDisplay.updateInput(...)  ← live “current line”
+                 │
+  [User hits Enter / clicks enter]
+                 │
+                 ▼
+      ActionButtons.calculateExpression(...)
+                 │
+                 ├─> ExpressionEngine.sanitize(raw)
+                 │     (normalize → strip → tokenize → validate → stitch)
+                 │
+                 └─> eval(evalStr)   % can be swapped for a pure evaluator
+                       │
+                       ▼
+          CalculationDisplay.addEntry(result)
+                 │
+                 ▼
+      CalculationDisplay.updateDisplay()  (history + highlight)
+
+
+<\ br>
+<\ br>
+
+---
+
+
+## ✨ Features
+
+* **Scientific functions** — trigonometry, exponentials, logarithms, π, *e*, hex input
+* **Robust expression validation** — catches unbalanced delimiters, malformed numbers, invalid operator sequences
+* **Command history with scrollable display** — up to 100 previous results; newest entry is automatically highlighted
+* **Completely code-based UI** — no `.mlapp` or App Designer files; all layout and styling is done programmatically for version control friendliness
+
+---
+
+## 🚀 Getting Started
+
+1. **Create a new blank MATLAB project** (or use an existing one).
+2. **Copy all `.m` files** from this repository into the same project folder.
+3. **Run the app** using either of the following:
+
+   * Open `CalculatorApp.m` and press **Run** in the MATLAB Editor, **or**
+   * In the Command Window, type:
+
+     ```matlab
+     myCalculator = CalculatorApp();
+     ```
+
+---
+
+## ⚠️ Notes & Limitations
+
+* Currently **does not support**:
+
+  * Unit conversions
+  * Number system conversions
+  * Graphing or plotting
+* Layout is built with grid containers (`uigridlayout`), but does not yet include:
+
+  * Responsive reflow logic
+  * Drag/drop component positioning
+* Many additional quality-of-life features are planned but not yet implemented
 
 
 
-| Core class | Responsibility |
-|------------|----------------|
-| `CalculatorApp` | Boots the app, creates the main `uifigure`, wires every sub‑module together. |
-| `CalculationDisplay` | Scrollable multi‑line output *plus* editable input field with command history. |
-| `NumberPad`, `AlphaPad` | Decimal digits, hex digits A‑F, decimal point, negative sign. |
-| `ArithmeticOperators` | `+ − × ÷` buttons with expression‑safe callbacks. |
-| `TrigonometricFunctions`, `ExponentialLogarithm` | Drop‑down panels for `sin cos tan` and `exp log pow`, auto‑insert `(`. |
-| `RelationalSymbols`, `CommonDelimiters` | Comparison (`< > ≤ ≥`) and delimiter (`( ) [ ] { }`) helpers. |
-| `ActionButtons` | *del* · *clear* · *enter* · *menu*; runs expression validation before `eval`. |
 
-> **Why modular?**  
-> Swap UI skins, embed the engine in a bigger project, or unit‑test components in isolation.
-
-## Features
-* **Scientific functions** – trigonometry, exponentials, π, *e*, log, hexadecimal digits.  
-* **Robust expression validator** – catches unbalanced delimiters, consecutive/bogus operators, stray decimals.  
-* **Command history & scrollable display** – up to 100 prior results, autoscroll to newest.  
-* **Drop‑in UI** – no Guide/AppDesigner files; everything is pure code for easy version control.
+<\ br>
+<\ br>
 
 
-A calculator app made programmatically in MATLAB. To use this app, create a new blank project in MATLAB, add all of the .m files from this repository to the project files so that they are all in the same folder, 
-and then run by either:  (1.) Opening 'CalculatorApp.m' and pressing the run button found in the editor tab, or (2.) type 'myCalculator = CalculatorApp();' in the command window.
-
-
-              NOTE: Does NOT contain functionality for: any conversion of units, any sort of grid layouts(and by extension automatic 
-              space partitions for components and their interface elements, meaning they are positioned by hard coded values here), plus a ton of quality of life stuff.
+<img width="527" height="701" alt="Screenshot 2025-09-17 at 11 05 41 PM" src="https://github.com/user-attachments/assets/4ef46c81-2c2c-4b65-bd92-014ff16e3283" />
 
 
 
-  
+<\ br>
 
 
+https://github.com/user-attachments/assets/1b61265a-2bd2-424c-aca5-61bff4e746da
 
-<img width="453" height="656" alt="Screenshot 2025-09-16 at 7 13 07 PM" src="https://github.com/user-attachments/assets/2e1b0af0-a7b6-4108-b50e-599b93f5fb02" />
+
+<\ br>
+<\ br>
 
 
 
@@ -46,17 +123,6 @@ and then run by either:  (1.) Opening 'CalculatorApp.m' and pressing the run but
 
 
 
-
-https://github.com/user-attachments/assets/600ec135-46b4-49e8-812c-c651368e1913
-
-
-
-
-
-## Quick start
-```matlab
->> addpath(genpath(pwd))        % once per session
->> app = CalculatorApp();       % launches GUI
 
 
 
